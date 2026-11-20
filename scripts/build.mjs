@@ -8,7 +8,9 @@ const files = {
   'web/style.css': 'web/style.css',
   'web/client.mjs': 'web/client.mjs',
   'web/renderer.mjs': 'web/renderer.mjs',
+  'web/audio.mjs': 'web/audio.mjs',
   'src/game.mjs': 'src/game.mjs',
+  'src/maps.mjs': 'src/maps.mjs',
   'game.contract.json': 'game.contract.json'
 };
 await Promise.all(Object.entries(files).map(([source, target]) =>

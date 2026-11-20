@@ -3,7 +3,9 @@ import { parseArgs } from 'node:util';
 import { DEFAULT_INPUT, Game } from './game.mjs';
 
 const contract = JSON.parse(readFileSync(new URL('../game.contract.json', import.meta.url), 'utf8'));
-const buttonFields = ['jump', 'interact', 'pulse', 'dash'];
+const buttonFields = ['jump', 'interact', 'pulse', 'dash', 'pause'];
+const shadeStates = new Set(['spawning', 'wander', 'chase', 'recoil', 'stunned']);
+const drifterStates = new Set(['idle', 'chase', 'flee', 'removed']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const nonnegative = value => Number.isFinite(value) && value >= 0;
 const count = value => Number.isSafeInteger(value) && value >= 0;
@@ -27,21 +29,34 @@ function validFrames(value) {
   return true;
 }
 
-function validScenario(value) {
+function validList(value, valid) {
+  if (!Array.isArray(value) || !value.every(valid)) return false;
+  const ids = value.filter(item => item.id !== undefined).map(item => item.id);
+  return new Set(ids).size === ids.length;
+}
+
+function validScenario(value, night) {
   if (!object(value)) return false;
   if (!optional(value, 'player', player => object(player)
-    && optional(player, 'pos', position) && optional(player, 'carried', count) && optional(player, 'flames', count))) return false;
+    && optional(player, 'pos', position) && optional(player, 'carried', count) && optional(player, 'flames', count)
+    && ['invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks'].every(key => optional(player, key, count)))) return false;
   if (!optional(value, 'time_left_s', nonnegative)
-    || !optional(value, 'random_motes', boolean) || !optional(value, 'random_shades', boolean)) return false;
-  if (!optional(value, 'motes', motes => Array.isArray(motes) && motes.every(position))) return false;
-  if (!optional(value, 'shades', shades => {
-    if (!Array.isArray(shades) || !shades.every(shade => object(shade)
-      && position(shade.pos) && optional(shade, 'id', identifier))) return false;
-    const ids = shades.filter(shade => 'id' in shade).map(shade => shade.id);
-    return new Set(ids).size === ids.length;
-  })) return false;
+    || !['random_motes', 'random_shades', 'random_drifters', 'wind_enabled'].every(key => optional(value, key, boolean))) return false;
+  if (!optional(value, 'motes', motes => validList(motes, mote => position(mote) || (object(mote)
+    && position(mote.pos) && optional(mote, 'id', identifier) && optional(mote, 'ttl_ticks', count)
+    && optional(mote, 'kind', kind => kind === 'random' || kind === 'dropped'))))) return false;
+  if (!optional(value, 'shades', shades => validList(shades, shade => object(shade)
+    && position(shade.pos) && optional(shade, 'id', identifier) && optional(shade, 'state_ticks_left', count)
+    && optional(shade, 'state', state => shadeStates.has(state))))) return false;
+  if (!optional(value, 'drifters', drifters => validList(drifters, drifter => object(drifter)
+    && position(drifter.pos) && optional(drifter, 'id', identifier) && optional(drifter, 'state_ticks_left', count)
+    && optional(drifter, 'stolen', count) && optional(drifter, 'state', state => drifterStates.has(state))))) return false;
+  if (!optional(value, 'charms', charms => validList(charms, charm => object(charm)
+    && optional(charm, 'id', identifier) && optional(charm, 'pos', position) && optional(charm, 'available', boolean)
+    && optional(charm, 'respawn_ticks', count)))) return false;
   return optional(value, 'lanterns', lanterns => Array.isArray(lanterns)
-    && lanterns.every(lantern => object(lantern) && typeof lantern.id === 'string' && /^L[1-5]$/.test(lantern.id)
+    && lanterns.every(lantern => object(lantern) && typeof lantern.id === 'string' && /^L[1-7]$/.test(lantern.id)
+      && Number(lantern.id.slice(1)) <= night + 4
       && optional(lantern, 'pos', position) && optional(lantern, 'deposited', count)
       && optional(lantern, 'lit', boolean))
     && new Set(lanterns.map(lantern => lantern.id)).size === lanterns.length);
@@ -85,15 +100,17 @@ function run() {
   const seed = integerArgument(values.seed, 'seed', Number.MIN_SAFE_INTEGER);
   const ticks = integerArgument(values.ticks, 'ticks', 0);
   const cadence = integerArgument(values['snapshot-every'], 'snapshot-every', 1);
-  if (values.night !== '1' || !values.out) throw new Error('--night 1 and --out <file.jsonl> are required');
+  if (!['1', '2', '3'].includes(values.night) || !values.out) throw new Error('--night <1|2|3> and --out <file.jsonl> are required');
+  const night = Number(values.night);
 
-  const scenario = readInput(values.scenario, validScenario, 'scenario', {});
+  const scenario = readInput(values.scenario, value => validScenario(value, night), 'scenario', {});
   const { frames } = readInput(values.inputs, validFrames, 'inputs', { frames: [] });
-  const game = new Game(contract.tuning, { seed, scenario });
-  const rows = [JSON.stringify(game.snapshot())];
+  const game = new Game(contract.tuning, { seed, night, scenario });
+  const rows = [JSON.stringify(game.snapshot()),
+    JSON.stringify({ type: 'event', tick: 0, name: 'night_start', data: { night } })];
   let input = DEFAULT_INPUT;
   let frameIndex = 0;
-  for (let tick = 0; tick < ticks && game.state === 'playing'; tick++) {
+  for (let tick = 0; tick < ticks && game.state !== 'lost' && game.state !== 'won'; tick++) {
     if (frames[frameIndex]?.tick === tick) {
       const { tick: inputTick, ...change } = frames[frameIndex++];
       input = { ...input, ...change };

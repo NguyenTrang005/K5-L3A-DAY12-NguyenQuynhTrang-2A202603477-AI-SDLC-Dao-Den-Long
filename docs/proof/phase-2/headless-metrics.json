@@ -1,0 +1,26 @@
+{
+  "os": "win32",
+  "os_release": "10.0.19045",
+  "cpu": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+  "node": "v26.13.1",
+  "metrics": [
+    {
+      "night": 1,
+      "ticks": 18000,
+      "snapshot_every": 10,
+      "elapsed_s": 0.19
+    },
+    {
+      "night": 2,
+      "ticks": 19800,
+      "snapshot_every": 10,
+      "elapsed_s": 0.242
+    },
+    {
+      "night": 3,
+      "ticks": 21600,
+      "snapshot_every": 10,
+      "elapsed_s": 0.321
+    }
+  ]
+}

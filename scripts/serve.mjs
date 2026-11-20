@@ -7,7 +7,9 @@ const files = new Map([
   ['/web/style.css', ['web/style.css', 'text/css']],
   ['/web/client.mjs', ['web/client.mjs', 'text/javascript']],
   ['/web/renderer.mjs', ['web/renderer.mjs', 'text/javascript']],
+  ['/web/audio.mjs', ['web/audio.mjs', 'text/javascript']],
   ['/src/game.mjs', ['src/game.mjs', 'text/javascript']],
+  ['/src/maps.mjs', ['src/maps.mjs', 'text/javascript']],
   ['/game.contract.json', ['game.contract.json', 'application/json']]
 ]);
 
@@ -31,6 +33,11 @@ const server = createServer((request, response) => {
   stream.on('error', () => response.writeHead(500).end());
 });
 
-server.listen(Number(process.env.PORT ?? 4173), '127.0.0.1', () => {
+const port = Number(process.env.PORT ?? 4173);
+server.on('error', error => {
+  console.error(error.code === 'EADDRINUSE' ? 'Cổng ' + port + ' đang được dùng. Hãy chọn cổng khác bằng biến PORT.' : error.message);
+  process.exitCode = 1;
+});
+server.listen(port, '127.0.0.1', () => {
   console.log('Mở game tại http://127.0.0.1:' + server.address().port + '/');
 });

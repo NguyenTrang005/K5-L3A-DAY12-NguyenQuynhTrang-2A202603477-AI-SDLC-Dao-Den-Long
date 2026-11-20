@@ -1,4 +1,4 @@
-import { ISLAND_RADIUS } from '../src/game.mjs';
+import { ground } from '../src/maps.mjs';
 
 const TAU = Math.PI * 2;
 const vertexSource = `
@@ -7,49 +7,51 @@ attribute vec3 a_normal;
 uniform mat4 u_viewProjection;
 uniform mat4 u_model;
 uniform vec3 u_inverseScale;
-varying mediump vec3 v_world;
-varying mediump vec3 v_normal;
+uniform vec3 u_color;
+uniform vec3 u_eye;
+uniform vec3 u_lanterns[7];
+uniform float u_ambient;
+uniform float u_glow;
+uniform float u_terrain;
+uniform float u_rim;
+varying mediump vec3 v_color;
 void main() {
   vec4 world = u_model * vec4(a_position, 1.0);
-  v_world = world.xyz;
-  v_normal = normalize(mat3(u_model) * (a_normal * u_inverseScale * u_inverseScale));
+  vec3 normal = normalize(mat3(u_model) * (a_normal * u_inverseScale * u_inverseScale));
+  float sunlight = max(dot(normal, vec3(-0.481, 0.819, -0.307)), 0.0);
+  float lanternLight = 0.0;
+  for (int i = 0; i < 7; i++) {
+    vec3 lantern = u_lanterns[i];
+    if (lantern.z > 0.0) lanternLight += 1.0 - smoothstep(0.0, 10.0, length(world.xz - lantern.xy));
+  }
+  vec3 base = u_color * (0.42 + 0.35 * sunlight + u_ambient);
+  if (u_terrain > 0.0) {
+    float grass = sin(world.x * 0.48 + sin(world.z * 0.35)) * cos(world.z * 0.21);
+    base += grass * 0.028;
+  }
+  base += lanternLight * vec3(0.32, 0.18, 0.045) * (0.55 + 0.45 * sunlight);
+  if (u_rim > 0.0) {
+    float rim = pow(1.0 - max(dot(normal, normalize(u_eye - world.xyz)), 0.0), 3.0);
+    base = mix(base, vec3(0.478, 0.235, 1.0), rim * u_rim);
+  }
+  base = mix(base, u_color, u_glow);
+  float fog = smoothstep(25.0, 112.0, distance(u_eye, world.xyz));
+  v_color = mix(base, vec3(0.106, 0.137, 0.314), fog * (1.0 - u_glow * 0.5));
   gl_Position = u_viewProjection * world;
 }
 `;
 const fragmentSource = `
 precision mediump float;
-uniform vec3 u_color;
-uniform vec3 u_eye;
-uniform vec3 u_lanterns[5];
-uniform float u_glow;
-uniform float u_terrain;
-varying mediump vec3 v_world;
-varying mediump vec3 v_normal;
-void main() {
-  float sunlight = max(dot(normalize(v_normal), normalize(vec3(-0.47, 0.8, -0.3))), 0.0);
-  float islandLight = 0.0;
-  float lanternLight = 0.0;
-  for (int i = 0; i < 5; i++) {
-    vec3 lantern = u_lanterns[i];
-    islandLight += lantern.z * 0.07;
-    lanternLight += lantern.z * (1.0 - smoothstep(0.0, 10.0, length(v_world.xz - lantern.xy)));
-  }
-  vec3 base = u_color * (0.55 + 0.45 * sunlight + islandLight);
-  float grass = sin(v_world.x * 0.48 + sin(v_world.z * 0.35)) * cos(v_world.z * 0.21);
-  base += u_terrain * (grass * 0.028 + 0.07 * smoothstep(28.0, 36.0, length(v_world.xz)));
-  base += lanternLight * vec3(0.32, 0.18, 0.045) * (0.55 + 0.45 * sunlight);
-  base = mix(base, u_color, u_glow);
-  float fog = smoothstep(25.0, 112.0, distance(u_eye, v_world));
-  gl_FragColor = vec4(mix(base, vec3(0.21, 0.18, 0.32), fog * (1.0 - u_glow * 0.5)), 1.0);
-}
+varying mediump vec3 v_color;
+void main() { gl_FragColor = vec4(v_color, 1.0); }
 `;
 
-function cylinder(top, bottom, sides = 16) {
+function cylinder(top, bottom, sides = 16, offset = 0, bands = 1) {
   const vertices = [];
   const vertex = (point, normal) => vertices.push(...point, ...normal);
   for (let index = 0; index < sides; index++) {
-    const a = index / sides * TAU;
-    const b = (index + 1) / sides * TAU;
+    const a = index / sides * TAU + offset;
+    const b = (index + 1) / sides * TAU + offset;
     const point = (angle, y, radius) => [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
     const upperA = point(a, 0.5, top);
     const upperB = point(b, 0.5, top);
@@ -57,7 +59,13 @@ function cylinder(top, bottom, sides = 16) {
     const lowerB = point(b, -0.5, bottom);
     const n = [Math.cos((a + b) / 2), bottom - top, Math.sin((a + b) / 2)];
     for (const p of [upperA, lowerA, upperB, upperB, lowerA, lowerB]) vertex(p, n);
-    for (const p of [[0, 0.5, 0], upperA, upperB]) vertex(p, [0, 1, 0]);
+    for (let band = 0; band < bands; band++) {
+      const min = top * band / bands, max = top * (band + 1) / bands;
+      const innerA = point(a, .5, min), innerB = point(b, .5, min);
+      const outerA = point(a, .5, max), outerB = point(b, .5, max);
+      for (const p of [innerA, outerA, outerB]) vertex(p, [0, 1, 0]);
+      if (band > 0) for (const p of [innerA, outerB, innerB]) vertex(p, [0, 1, 0]);
+    }
     for (const p of [[0, -0.5, 0], lowerA, lowerB]) vertex(p, [0, -1, 0]);
   }
   return vertices;
@@ -96,6 +104,38 @@ function ring() {
   return vertices;
 }
 
+function terrace() {
+  const vertices = [];
+  const vertex = (p, n) => vertices.push(...p, ...n);
+  const edge = (angle, r, y) => [r * Math.cos(angle), y, r * Math.sin(angle)];
+  function wall(a, b, normal) {
+    const base = p => [p[0], 0, p[2]];
+    for (const point of [a, b, base(a), b, base(b), base(a)]) vertex(point, normal);
+  }
+  for (let index = 0; index < 48; index++) {
+    const a = index * Math.PI / 48;
+    const b = (index + 1) * Math.PI / 48;
+    const innerA = edge(a, 12, 3), innerB = edge(b, 12, 3);
+    const outerA = edge(a, 24, 3), outerB = edge(b, 24, 3);
+    for (const point of [innerA, outerA, outerB, innerA, outerB, innerB]) vertex(point, [0, 1, 0]);
+    const middle = (a + b) / 2;
+    wall(outerA, outerB, [Math.cos(middle), 0, Math.sin(middle)]);
+    wall(innerA, innerB, [-Math.cos(middle), 0, -Math.sin(middle)]);
+  }
+  wall([12, 3, 0], [24, 3, 0], [0, 0, -1]);
+  wall([-12, 3, 0], [-24, 3, 0], [0, 0, -1]);
+  return vertices;
+}
+
+function ramp() {
+  const vertices = [];
+  const a = [-3, 3, -1.5], b = [-3, 3, 1.5], c = [3, 0, 1.5], d = [3, 0, -1.5];
+  for (const point of [a, b, c, a, c, d]) vertices.push(...point, .447, .894, 0);
+  for (const point of [a, d, [-3, 0, -1.5]]) vertices.push(...point, 0, 0, -1);
+  for (const point of [b, c, [-3, 0, 1.5]]) vertices.push(...point, 0, 0, 1);
+  return vertices;
+}
+
 const normalize = vector => {
   const length = Math.hypot(...vector);
   return vector.map(value => value / length);
@@ -120,6 +160,33 @@ function viewProjection(eye, target, ratio) {
   ]);
 }
 
+function cameraRig(map, x, y, z, yaw) {
+  const cameraHeight = Math.max(y, -2);
+  const theta = yaw * Math.PI / 180;
+  const forwardX = Math.sin(theta), forwardZ = Math.cos(theta);
+  let distance = 1;
+  if (map.tower) {
+    // Test từ vai Mây đi ngược về camera để tháp và vách tầng luôn ở sau camera.
+    for (let step = 1; step <= 24; step++) {
+      const portion = step / 24;
+      const cx = x - forwardX * 8.7 * portion;
+      const cz = z - forwardZ * 8.7 * portion;
+      const cy = cameraHeight + 1.65 + 4.15 * portion;
+      const wall = Math.hypot(cx, cz) <= map.tower.radius + .33 && cy >= 5.8 && cy < map.tower.top + .35;
+      if (wall || cy < ground(map, cx, cz) + .34) {
+        distance = Math.max(1 / 24, (step - 1) / 24);
+        break;
+      }
+    }
+  }
+  const lookAhead = 3.1 + 2.5 * distance;
+  return {
+    height: cameraHeight,
+    eye: [x - forwardX * 8.7 * distance, cameraHeight + 1.65 + 4.15 * distance, z - forwardZ * 8.7 * distance],
+    target: [x + forwardX * lookAhead, cameraHeight + 1.1, z + forwardZ * lookAhead]
+  };
+}
+
 function createProgram(gl) {
   const program = gl.createProgram();
   for (const [type, source] of [[gl.VERTEX_SHADER, vertexSource], [gl.FRAGMENT_SHADER, fragmentSource]]) {
@@ -135,38 +202,58 @@ function createProgram(gl) {
   return program;
 }
 
-function buildIslandScenery() {
+function buildIslandScenery(map) {
   const scenery = [];
   const add = (kind, pos, size, color, yaw = 0, glow = 0, terrain = 0) => {
     scenery.push({ kind, pos, size, color, yaw, glow, terrain });
   };
-  const diameter = 2 * ISLAND_RADIUS;
-  add('cliff', [0, -3.6, 0], [diameter, 7, diameter], '#463b5b');
-  add('grass', [0, -0.72, 0], [diameter, 1.44, diameter], '#3b635c', 0, 0, 1);
-  add('cliff', [0, -8, 0], [51, 4.2, 51], '#322842');
-  add('disc', [0, 0.025, 0], [7, 0.05, 7], '#4c645d');
-  for (let index = 0; index < 15; index++) {
-    const angle = index * TAU / 15;
-    const x = Math.cos(angle) * 32;
-    const z = Math.sin(angle) * 32;
-    const height = 3 + (index % 4) * 0.6;
-    add('hex', [x, height * 0.28, z], [0.55, height * .56, 0.55], '#665761', angle);
-    add('tree', [x, height * .63, z], [3.1, height * .95, 3.1], index % 2 ? '#254b51' : '#31545a', angle);
-    add('tree', [x, height, z], [2.4, height * .8, 2.4], '#437269', angle);
+  for (const { x: cx, z: cz, radius } of map.islands) {
+    const diameter = radius * 2;
+    add('cliff', [cx, -3.6, cz], [diameter, 7, diameter], '#463b5b');
+    add('grass', [cx, -0.72, cz], [diameter, 1.44, diameter], '#2F5D50', 0, 0, 1);
+    add('cliff', [cx, -8, cz], [diameter * .68, 4.2, diameter * .68], '#322842');
+    for (let index = 0; index < 12; index++) {
+      const angle = (index + .3) * TAU / 12;
+      const x = cx + Math.cos(angle) * (radius - 4);
+      const z = cz + Math.sin(angle) * (radius - 4);
+      const height = 3 + (index % 4) * 0.6;
+      add('hex', [x, height * 0.28, z], [0.55, height * .56, 0.55], '#6B4A2F', angle);
+      add('tree', [x, height * .63, z], [3.1, height * .95, 3.1], '#254b51', angle);
+      add('tree', [x, height, z], [2.4, height * .8, 2.4], '#437269', angle);
+    }
+    for (let index = 0; index < 19; index++) {
+      const angle = index * 2.39996;
+      const r = radius * (.5 + (index % 6) / 14);
+      const x = cx + Math.cos(angle) * r;
+      const z = cz + Math.sin(angle) * r;
+      add('hex', [x, 0.12, z], [1.2, 0.35, 0.94], '#69716b', angle);
+    }
   }
-  for (let index = 0; index < 50; index++) {
-    const angle = index * 2.39996;
-    const radius = 11 + (index * 7) % 23;
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    add('hex', [x, 0.12, z], [1.2, 0.35, 0.94], index % 2 ? '#69716b' : '#58665e', angle);
+  add('disc', [map.start[0], .025, map.start[2]], [7, .05, 7], '#C9B48A');
+  if (map.bridge) {
+    for (let index = 0; index < 18; index++) {
+      add('box', [26.5 + index, -.13, 0], [.97, .26, 4], index % 2 ? '#6B4A2F' : '#7A5839');
+    }
+    for (const z of [-1.72, 1.72]) add('box', [35, -.35, z], [18, .22, .2], '#6B4A2F');
   }
-  for (let index = 0; index < 26; index++) {
+  if (map.ramps) {
+    add('terrace', [0, 0, 0], [1, 1, 1], '#2F5D50', 0, 0, 1);
+    add('grass', [0, 3, 0], [16, 6, 16], '#2F5D50');
+    for (const [dx, dz] of map.ramps) add('ramp', [dx * 27, 0, dz * 27], [1, 1, 1], '#C9B48A', -Math.atan2(dz, dx));
+    add('disc', [0, 9.5, 0], [4, 7, 4], '#6B4A2F');
+    add('hat', [0, 13.5, 0], [4.5, 1, 4.5], '#74404a');
+    add('hex', [0, 12, 0], [4.2, .18, 4.2], '#F2C14E', 0, .25);
+  }
+  for (const { pos: [x, y, z] } of map.pads) {
+    add('disc', [x, y + .075, z], [2, .15, 2], '#6B4A2F');
+    add('ring', [x, y + .16, z], [1.65, 1, 1.65], '#F2C14E', 0, .75);
+  }
+  for (let index = 0; index < 20; index++) {
     const angle = index * 2.4;
     const radius = 48 + index % 4 * 11;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
-    add('sphere', [x, -4 - index % 7, z], [22, 4, 10], index % 2 ? '#726483' : '#655877', angle);
+    add('sphere', [x, -4 - index % 7, z], [22, 4, 10], '#12384A', angle);
   }
   for (let index = 0; index < 36; index++) {
     const angle = index * 2.4;
@@ -185,7 +272,7 @@ export class Renderer {
     this.gl = gl;
     this.program = createProgram(gl);
     gl.useProgram(this.program);
-    this.uniforms = Object.fromEntries(['viewProjection', 'model', 'inverseScale', 'eye', 'color', 'glow', 'terrain']
+    this.uniforms = Object.fromEntries(['viewProjection', 'model', 'inverseScale', 'eye', 'color', 'glow', 'terrain', 'ambient', 'rim']
       .map(name => [name, gl.getUniformLocation(this.program, 'u_' + name)]));
     this.uniforms.lanterns = gl.getUniformLocation(this.program, 'u_lanterns[0]');
     this.position = gl.getAttribLocation(this.program, 'a_position');
@@ -195,10 +282,11 @@ export class Renderer {
     gl.enable(gl.DEPTH_TEST);
     this.meshes = {};
     const meshes = {
-      disc: cylinder(.5, .5, 40), grass: cylinder(.5, .5, 96), cliff: cylinder(.5, .32, 24),
+      disc: cylinder(.5, .5, 36), grass: cylinder(.5, .5, 72, 0, 8), cliff: cylinder(.5, .32, 24),
       hex: cylinder(.5, .5, 6), post: cylinder(.5, .55, 4), hat: cylinder(.03, .5, 20),
       robe: cylinder(.25, .5, 12), tree: cylinder(.05, .5, 7),
-      gem: sphere(5, 3), sphere: sphere(), ring: ring()
+      gem: sphere(5, 3), sphere: sphere(), ring: ring(),
+      box: cylinder(Math.SQRT1_2, Math.SQRT1_2, 4, Math.PI / 4), terrace: terrace(), ramp: ramp()
     };
     for (const [name, vertices] of Object.entries(meshes)) {
       const buffer = gl.createBuffer();
@@ -206,11 +294,11 @@ export class Renderer {
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
       this.meshes[name] = { buffer, count: vertices.length / 6 };
     }
-    this.island = buildIslandScenery();
+    this.sceneMap = null;
     this.colors = new Map();
   }
 
-  draw(kind, [x, y, z], [sx, sy, sz], color, yaw = 0, glow = 0, terrain = 0) {
+  draw(kind, [x, y, z], [sx, sy, sz], color, yaw = 0, glow = 0, terrain = 0, rim = 0) {
     const { gl, uniforms } = this;
     const mesh = this.meshes[kind];
     const c = Math.cos(yaw);
@@ -221,6 +309,7 @@ export class Renderer {
     gl.uniform3fv(uniforms.color, this.colors.get(color));
     gl.uniform1f(uniforms.glow, glow);
     gl.uniform1f(uniforms.terrain, terrain);
+    gl.uniform1f(uniforms.rim, rim);
     gl.uniform3f(uniforms.inverseScale, 1 / sx, 1 / sy, 1 / sz);
     gl.uniformMatrix4fv(uniforms.model, false, [
       c * sx, 0, -s * sx, 0, 0, sy, 0, 0, s * sz, 0, c * sz, 0, x, y, z, 1
@@ -235,18 +324,18 @@ export class Renderer {
   }
 
   lantern(lantern, tuning, time) {
-    const [x, , z] = lantern.pos;
+    const [x, y, z] = lantern.pos;
     const lit = lantern.lit;
-    const color = lit ? '#ffc275' : '#b191ba';
+    const color = lit ? '#FFB347' : '#5B5F6E';
     const base = '#414555';
-    this.draw('hex', [x, .18, z], [2.5, .36, 2.5], base);
-    this.draw('hex', [x, .46, z], [1.8, .25, 1.8], '#82717d');
-    this.draw('post', [x, 1.45, z], [.47, 1.9, .47], '#76585e', Math.PI / 4);
-    this.draw('hex', [x, 2.48, z], [1.5, .23, 1.5], '#593f54');
-    this.draw('hex', [x, 3.03, z], [1.24, .95, 1.24], color, time * .1, lit ? 1 : .28);
-    this.draw('hat', [x, 3.72, z], [1.95, .67, 1.95], lit ? '#d78154' : '#685471');
-    this.draw('gem', [x, 4.09, z], [.3, .33, .3], color, 0, lit ? 1 : .2);
-    if (lit) this.draw('ring', [x, .06, z], [2 * tuning.safe_radius, 1, 2 * tuning.safe_radius], '#ca9765', 0, .35);
+    this.draw('hex', [x, y + .18, z], [2.5, .36, 2.5], base);
+    this.draw('hex', [x, y + .46, z], [1.8, .25, 1.8], '#82717d');
+    this.draw('post', [x, y + 1.45, z], [.47, 1.9, .47], '#6B4A2F', Math.PI / 4);
+    this.draw('hex', [x, y + 2.48, z], [1.5, .23, 1.5], '#593f54');
+    this.draw('hex', [x, y + 3.03, z], [1.24, .95, 1.24], color, time * .1, lit ? 1 : .28);
+    this.draw('hat', [x, y + 3.72, z], [1.95, .67, 1.95], lit ? '#FFB347' : '#5B5F6E');
+    this.draw('gem', [x, y + 4.09, z], [.3, .33, .3], lit ? '#FFE9B0' : color, 0, lit ? 1 : .2);
+    if (lit) this.draw('ring', [x, y + .06, z], [2 * tuning.safe_radius, 1, 2 * tuning.safe_radius], '#F2C14E', 0, .35);
   }
 
   player(game, time) {
@@ -259,10 +348,12 @@ export class Renderer {
       const pz = z - side * Math.sin(yaw) + front * Math.cos(yaw);
       this.draw(kind, [px, y + up, pz], size, color, yaw, glow);
     };
-    this.draw('disc', [x, .025, z], [1.35, .025, .96], '#294345');
+    if (game.player.grounded) this.draw('disc', [x, y + .025, z], [1.35, .025, .96], '#294345');
     part('sphere', -.21, .24, lean, [.31, .48, .44], '#303246');
     part('sphere', .21, .24, -lean, [.31, .48, .44], '#303246');
-    part('robe', 0, .77, 0, [1.02, 1.05, .73], '#e4926b');
+    part('robe', 0, .77, 0, [1.02, 1.05, .73], '#E8E2D0');
+    part('disc', 0, 1.17, 0, [.58, .16, .59], '#C8102E');
+    part('post', 0, .99, -.39, [.21, .41, .09], '#C8102E');
     part('sphere', 0, 1.43, .03, [.76, .77, .71], '#f2b382');
     part('sphere', 0, 1.48, -.24, [.7, .7, .3], '#443044');
     part('hat', 0, 1.97, 0, [1.58, .60, 1.58], '#edbe78');
@@ -273,7 +364,7 @@ export class Renderer {
 
   render(game, yaw, time, pulseTick) {
     const { canvas, gl, uniforms } = this;
-    const scale = Math.min(devicePixelRatio, 1.5, 1440 / Math.max(canvas.clientWidth, 1));
+    const scale = Math.min(devicePixelRatio, 1.5, 1280 / Math.max(canvas.clientWidth, 1));
     const width = Math.max(1, Math.floor(canvas.clientWidth * scale));
     const height = Math.max(1, Math.floor(canvas.clientHeight * scale));
     if (canvas.width !== width || canvas.height !== height) {
@@ -284,41 +375,80 @@ export class Renderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const [x, y, z] = game.player.pos;
-    const theta = yaw * Math.PI / 180;
-    const forwardX = Math.sin(theta);
-    const forwardZ = Math.cos(theta);
-    const eye = [x - forwardX * 8.7, 5.8 + y * .55, z - forwardZ * 8.7];
-    const target = [x + forwardX * 5.6, 1.1 + y * .55, z + forwardZ * 5.6];
-    gl.uniformMatrix4fv(uniforms.viewProjection, false, viewProjection(eye, target, width / height));
+    const { eye, target, height: cameraHeight } = cameraRig(game.map, x, y, z, yaw);
+    this.view = viewProjection(eye, target, width / height);
+    gl.uniformMatrix4fv(uniforms.viewProjection, false, this.view);
     gl.uniform3fv(uniforms.eye, eye);
-    gl.uniform3fv(uniforms.lanterns, game.lanterns.flatMap(lantern => [lantern.pos[0], lantern.pos[2], Number(lantern.lit)]));
+    const lights = new Float32Array(21);
+    game.lanterns.forEach((lantern, index) => lights.set([lantern.pos[0], lantern.pos[2], Number(lantern.lit)], index * 3));
+    gl.uniform3fv(uniforms.lanterns, lights);
+    gl.uniform1f(uniforms.ambient, .15 + .55 * game.lanterns.filter(lantern => lantern.lit).length / game.lanterns.length);
 
+    if (this.sceneMap !== game.map) {
+      this.sceneMap = game.map;
+      this.island = buildIslandScenery(game.map);
+    }
     for (const prop of this.island) this.draw(prop.kind, prop.pos, prop.size, prop.color, prop.yaw, prop.glow, prop.terrain);
     for (const lantern of game.lanterns) this.lantern(lantern, game.tuning, time);
     for (const [index, mote] of game.motes.entries()) {
-      const [mx, , mz] = mote.pos;
+      const [mx, my, mz] = mote.pos;
       const bob = Math.sin(time * 2.9 + index) * .21;
-      this.draw('gem', [mx, .84 + bob, mz], [.38, .48, .38], '#ffd781', time * 1.8 + index, 1);
-      this.draw('gem', [mx + .25, 1.13 - bob, mz + .24], [.13, .13, .13], '#ffaa57', 0, .95);
+      this.draw('gem', [mx, my + .84 + bob, mz], [.38, .48, .38], '#FFF6C2', time * 1.8 + index, 1);
+      this.draw('gem', [mx + .25, my + 1.13 - bob, mz + .24], [.13, .13, .13], '#FFE58A', 0, .95);
+    }
+    for (const charm of game.charms) {
+      if (charm.respawnAt > game.simTick) continue;
+      const [cx, cy, cz] = charm.pos;
+      const bob = Math.sin(time * 3) * .15;
+      this.draw('box', [cx, cy + 1.05 + bob, cz], [.58, .9, .12], '#F2C14E', time, .8);
+      this.draw('box', [cx, cy + 1.06 + bob, cz], [.46, .72, .15], '#C8102E', time, .75);
+    }
+    for (const drifter of game.drifters) {
+      const [dx, dy, dz] = drifter.pos;
+      const angle = drifter.heading;
+      for (let part = 0; part < 5; part++) {
+        const length = part * .34;
+        this.draw('sphere', [dx - Math.cos(angle) * length, dy + .65 + Math.sin(time * 9 - part) * .28,
+          dz - Math.sin(angle) * length], [.55, .2, .41 - part * .055], '#8FA3B8', 0, .45);
+      }
+    }
+    if (game.windWarning || game.wind.active) {
+      const angle = game.wind.dir_deg * TAU / 360;
+      for (let index = 0; index < 24; index++) {
+        const travel = (time * (game.wind.active ? 11 : 5) + index * 3.7) % 28 - 14;
+        const side = (index * 7) % 18 - 9;
+        this.draw('gem', [x + Math.cos(angle) * travel - Math.sin(angle) * side, cameraHeight + 1.4 + (index % 5) * .4,
+          z + Math.sin(angle) * travel + Math.cos(angle) * side], [.4, .06, .16], '#AFA676', time + index, .4);
+      }
     }
     for (const [index, shade] of game.shades.entries()) {
       const [sx, sy, sz] = shade.pos;
       const stunned = shade.state === 'stunned';
       const bob = Math.sin(time * 4.2 + index) * .13;
       const heading = Math.atan2(x - sx, z - sz);
-      this.draw('sphere', [sx, sy + bob, sz], [1.45, 1.85, 1.22], stunned ? '#665588' : '#39254d', heading);
-      this.draw('sphere', [sx, sy * .65 + bob, sz], [1.7, .8, 1.15], '#302041', heading);
+      this.draw('sphere', [sx, sy + bob, sz], [1.45, 1.85, 1.22], stunned ? '#3A3450' : '#120A1A', heading, 0, 0, stunned ? 0 : 1);
+      this.draw('sphere', [sx, sy - .45 + bob, sz], [1.7, .8, 1.15], '#3A3450', heading);
       for (const offset of [-.22, .22]) {
         this.draw('gem', [sx + Math.sin(heading) * .5 + Math.cos(heading) * offset, sy + .22 + bob,
           sz + Math.cos(heading) * .5 - Math.sin(heading) * offset],
-        [.19, .21, .19], stunned ? '#ffe3a1' : '#eb9ede', 0, 1);
+        [.19, .21, .19], stunned ? '#FFE9B0' : '#7A3CFF', 0, 1);
       }
     }
-    const pulseAge = game.tick - pulseTick;
+    const pulseAge = game.simTick - pulseTick;
     if (pulseAge < 28) {
       const diameter = 1 + pulseAge / 28 * game.tuning.pulse_radius * 2;
-      this.draw('ring', [x, .09, z], [diameter, 1, diameter], '#ffe3a8', 0, 1);
+      this.draw('ring', [x, y + .09, z], [diameter, 1, diameter], '#FFE9B0', 0, 1);
     }
-    this.player(game, time);
+    if (!game.respawnAt && (game.simTick >= game.hitUntil || game.simTick % 12 < 7)) this.player(game, time);
+  }
+
+  visible([x, y, z]) {
+    if (!this.view) return true;
+    const m = this.view;
+    const w = m[3] * x + m[7] * y + m[11] * z + m[15];
+    if (w <= 0) return false;
+    const px = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
+    const py = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+    return Math.abs(px) < 1 && Math.abs(py) < 1;
   }
 }

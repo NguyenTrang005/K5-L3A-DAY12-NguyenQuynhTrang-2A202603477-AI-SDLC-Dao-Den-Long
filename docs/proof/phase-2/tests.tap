@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: hồi quy Đêm 1 với số chuẩn: gom 10 đom đóm, thắp đèn cuối và dừng đúng tick
+ok 1 - hồi quy Đêm 1 với số chuẩn: gom 10 đom đóm, thắp đèn cuối và dừng đúng tick
+  ---
+  duration_ms: 55.2812
+  type: 'test'
+  ...
+# Subtest: headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo
+ok 2 - headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo
+  ---
+  duration_ms: 47.9712
+  type: 'test'
+  ...
+# Subtest: headless sinh cùng ID và JSONL giống hệt nhau với cùng seed
+ok 3 - headless sinh cùng ID và JSONL giống hệt nhau với cùng seed
+  ---
+  duration_ms: 119.4734
+  type: 'test'
+  ...
+# Subtest: headless trả mã 2 và stderr cho nội dung scenario hoặc inputs sai
+ok 4 - headless trả mã 2 và stderr cho nội dung scenario hoặc inputs sai
+  ---
+  duration_ms: 183.5069
+  type: 'test'
+  ...
+# Subtest: nhặt theo XZ và giới hạn độ cao, nạp một lần mỗi lượt nhấn
+ok 5 - nhặt theo XZ và giới hạn độ cao, nạp một lần mỗi lượt nhấn
+  ---
+  duration_ms: 1.6774
+  type: 'test'
+  ...
+# Subtest: pulse trừ đom đóm, đẩy và làm choáng, có cooldown và cần nhấn lại
+ok 6 - pulse trừ đom đóm, đẩy và làm choáng, có cooldown và cần nhấn lại
+  ---
+  duration_ms: 1.9394
+  type: 'test'
+  ...
+# Subtest: Bóng Mực tránh vùng đèn, gây rơi đom đóm và không đánh trong thời gian bất tử
+ok 7 - Bóng Mực tránh vùng đèn, gây rơi đom đóm và không đánh trong thời gian bất tử
+  ---
+  duration_ms: 1.6802
+  type: 'test'
+  ...
+# Subtest: hết giờ thì thua ở tick tương ứng và dừng mô phỏng
+ok 8 - hết giờ thì thua ở tick tương ứng và dừng mô phỏng
+  ---
+  duration_ms: 0.2135
+  type: 'test'
+  ...
+# Subtest: v1.1: ba Đêm mở với layout, thời lượng, mảng snapshot và 20 đom đóm chuẩn
+ok 9 - v1.1: ba Đêm mở với layout, thời lượng, mảng snapshot và 20 đom đóm chuẩn
+  ---
+  duration_ms: 186.4035
+  type: 'test'
+  ...
+# Subtest: lướt đúng 12 tick từ hướng đang nhìn, giữ Y khi đang nhảy và cần hồi chiêu
+ok 10 - lướt đúng 12 tick từ hướng đang nhìn, giữ Y khi đang nhảy và cần hồi chiêu
+  ---
+  duration_ms: 50.9138
+  type: 'test'
+  ...
+# Subtest: pause giữ nguyên sim_tick, thời gian, cooldown, TTL, bùa và lịch sinh
+ok 11 - pause giữ nguyên sim_tick, thời gian, cooldown, TTL, bùa và lịch sinh
+  ---
+  duration_ms: 51.3631
+  type: 'test'
+  ...
+# Subtest: ngã bỏ qua bất tử, mất toàn bộ đồ một lần và hồi sinh sau 60 tick
+ok 12 - ngã bỏ qua bất tử, mất toàn bộ đồ một lần và hồi sinh sau 60 tick
+  ---
+  duration_ms: 48.3677
+  type: 'test'
+  ...
+# Subtest: thứ tự kết quả ưu tiên hết lửa, rồi đủ đèn, rồi hết giờ; đèn hòa chọn ID nhỏ
+ok 13 - thứ tự kết quả ưu tiên hết lửa, rồi đủ đèn, rồi hết giờ; đèn hòa chọn ID nhỏ
+  ---
+  duration_ms: 152.2202
+  type: 'test'
+  ...
+# Subtest: Đảo Cau: đi qua cầu và bị khóa hướng khi được bục phóng sang đảo đối diện
+ok 14 - Đảo Cau: đi qua cầu và bị khóa hướng khi được bục phóng sang đảo đối diện
+  ---
+  duration_ms: 100.6509
+  type: 'test'
+  ...
+# Subtest: Đảo Chuông: dốc lên tầng 1, vách chặn, bục lên tầng 2, tháp cản đường
+ok 15 - Đảo Chuông: dốc lên tầng 1, vách chặn, bục lên tầng 2, tháp cản đường
+  ---
+  duration_ms: 139.1143
+  type: 'test'
+  ...
+# Subtest: Gió Lạc sinh đúng lịch và biến mất khi hết thời gian chạy trốn
+ok 16 - Gió Lạc sinh đúng lịch và biến mất khi hết thời gian chạy trốn
+  ---
+  duration_ms: 109.7541
+  type: 'test'
+  ...
+# Subtest: Gió Lạc cướp trước hit, có thể lấy lại đom đóm bằng pulse, và sợ pulse khi chase
+ok 17 - Gió Lạc cướp trước hit, có thể lấy lại đom đóm bằng pulse, và sợ pulse khi chase
+  ---
+  duration_ms: 104.9035
+  type: 'test'
+  ...
+# Subtest: Bùa Gió tăng tốc, bỏ cooldown lướt, hết hiệu lực và hiện lại đúng tick
+ok 18 - Bùa Gió tăng tốc, bỏ cooldown lướt, hết hiệu lực và hiện lại đúng tick
+  ---
+  duration_ms: 85.6818
+  type: 'test'
+  ...
+# Subtest: gió mạnh theo sim_tick, cảnh báo giữ hướng và sức đẩy đúng 2 m/s
+ok 19 - gió mạnh theo sim_tick, cảnh báo giữ hướng và sức đẩy đúng 2 m/s
+  ---
+  duration_ms: 81.7157
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng dùng khoảng cách 3D và dừng đẩy ở vách tháp
+ok 20 - Tỏa Sáng dùng khoảng cách 3D và dừng đẩy ở vách tháp
+  ---
+  duration_ms: 49.5954
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1393.5881

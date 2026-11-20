@@ -1,0 +1,6 @@
+{
+  "player": { "pos": [25, 0, 0], "invuln_ticks": 90 },
+  "random_motes": false,
+  "random_shades": false,
+  "random_drifters": false
+}

@@ -1,0 +1,196 @@
+{
+  "browser": "Chrome/157.0.8103.79",
+  "gpu": "SwiftShader",
+  "platform": "Windows 10.0.19045",
+  "cpu": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+  "fps": [
+    {
+      "night": 1,
+      "resolution": [
+        1280,
+        720
+      ],
+      "elapsed_s": 5.183,
+      "frames": 231,
+      "average_fps": 44.37
+    },
+    {
+      "night": 2,
+      "resolution": [
+        1280,
+        720
+      ],
+      "elapsed_s": 5.181,
+      "frames": 283,
+      "average_fps": 54.43
+    },
+    {
+      "night": 3,
+      "resolution": [
+        1280,
+        720
+      ],
+      "elapsed_s": 5.183,
+      "frames": 212,
+      "average_fps": 40.71
+    }
+  ],
+  "observations": {
+    "settingsRestored": {
+      "volume": 35,
+      "mouseSensitivity": 145
+    },
+    "offscreenArrow": true,
+    "dash": {
+      "pos": [
+        0,
+        0.114,
+        0.233
+      ],
+      "vel": [
+        0,
+        0,
+        14
+      ],
+      "grounded": false,
+      "flames": 3,
+      "carried": 0,
+      "invuln": false,
+      "dash_cd_s": 1.5,
+      "pulse_cd_s": 0,
+      "charm_s": 0
+    },
+    "pause": {
+      "tickBefore": 465,
+      "tickAfter": 645,
+      "simTick": 464,
+      "timeLeft": 292.26666666666665
+    },
+    "bridgeAndCharm": {
+      "pos": [
+        36.16,
+        0,
+        0
+      ],
+      "vel": [
+        7.2,
+        0,
+        0
+      ],
+      "grounded": true,
+      "flames": 3,
+      "carried": 0,
+      "invuln": false,
+      "dash_cd_s": 0,
+      "pulse_cd_s": 0,
+      "charm_s": 9.7
+    },
+    "retryNight2": {
+      "panel-title": "Đảo Cau",
+      "panel-copy": "Ông Đăng — “Qua cầu tre để tìm đèn bên kia. Bục nhảy cũng đưa con sang đảo kế bên. Coi chừng Gió Lạc cướp đom đóm.”",
+      "time": "5:30",
+      "location": "Đêm 2 · Đảo Cau",
+      "lanterns": "0 / 6",
+      "score": "0",
+      "mote-count": "0 / 10",
+      "dash": "Sẵn sàng",
+      "hint": "",
+      "view": "playing",
+      "slots": 10,
+      "size": [
+        1280,
+        720
+      ]
+    },
+    "bellPad": {
+      "pos": [
+        0,
+        6,
+        6.2
+      ],
+      "vel": [
+        0,
+        0,
+        0
+      ],
+      "grounded": true,
+      "flames": 3,
+      "carried": 0,
+      "invuln": false,
+      "dash_cd_s": 0,
+      "pulse_cd_s": 0,
+      "charm_s": 0
+    },
+    "audioOscillators": 70
+  },
+  "results": [
+    {
+      "night": 1,
+      "result": "won",
+      "score": 934,
+      "view": {
+        "panel-title": "Đảo đã sáng!",
+        "panel-copy": "Điểm Đêm 1: 934. Tổng điểm: 934.",
+        "time": "4:53",
+        "location": "Đêm 1 · Đảo Bến",
+        "lanterns": "5 / 5",
+        "score": "934",
+        "mote-count": "0 / 10",
+        "dash": "1.4 s",
+        "hint": "",
+        "view": "result",
+        "slots": 10,
+        "size": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "night": 2,
+      "result": "won",
+      "score": 1008,
+      "view": {
+        "panel-title": "Đảo đã sáng!",
+        "panel-copy": "Điểm Đêm 2: 1008. Tổng điểm: 1942.",
+        "time": "5:30",
+        "location": "Đêm 2 · Đảo Cau",
+        "lanterns": "6 / 6",
+        "score": "1008",
+        "mote-count": "0 / 10",
+        "dash": "Sẵn sàng",
+        "hint": "",
+        "view": "result",
+        "slots": 10,
+        "size": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "night": 3,
+      "result": "won",
+      "score": 362,
+      "view": {
+        "panel-title": "Bình Minh",
+        "panel-copy": "Tổng điểm ba Đêm: 2304.",
+        "time": "0:07",
+        "location": "Đêm 3 · Đảo Chuông",
+        "lanterns": "7 / 7",
+        "score": "362",
+        "mote-count": "0 / 10",
+        "dash": "Sẵn sàng",
+        "hint": "",
+        "view": "dawn",
+        "slots": 10,
+        "size": [
+          1280,
+          720
+        ]
+      }
+    }
+  ],
+  "total": 2304,
+  "errors": []
+}
