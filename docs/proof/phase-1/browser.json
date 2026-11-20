@@ -1,0 +1,108 @@
+{
+  "browser": "Chrome/157.0.8103.79",
+  "errors": [],
+  "notes": [
+    [
+      "Bắt đầu",
+      {
+        "title": "Đảo Đèn Lồng",
+        "button": "Bắt đầu",
+        "overlay": true,
+        "score": "0",
+        "flames": "3 ánh lửa",
+        "lanterns": "0 / 5",
+        "motes": "0 / 8",
+        "time": "3:00",
+        "pixels": [
+          1200,
+          780
+        ]
+      }
+    ],
+    [
+      "Đang chơi",
+      {
+        "title": "Đảo Đèn Lồng",
+        "button": "Bắt đầu",
+        "overlay": false,
+        "score": "170",
+        "flames": "2 ánh lửa",
+        "lanterns": "1 / 5",
+        "motes": "2 / 8",
+        "time": "2:55",
+        "pixels": [
+          1200,
+          780
+        ]
+      }
+    ],
+    [
+      "Thắng",
+      {
+        "title": "Đảo đã sáng!",
+        "button": "Chơi lại",
+        "overlay": true,
+        "score": "1078",
+        "flames": "1 ánh lửa",
+        "lanterns": "5 / 5",
+        "motes": "1 / 8",
+        "time": "2:34",
+        "pixels": [
+          1200,
+          780
+        ]
+      }
+    ],
+    [
+      "Chơi lại sau khi thắng",
+      {
+        "title": "Đảo đã sáng!",
+        "button": "Chơi lại",
+        "overlay": false,
+        "score": "0",
+        "flames": "3 ánh lửa",
+        "lanterns": "0 / 5",
+        "motes": "0 / 8",
+        "time": "3:00",
+        "pixels": [
+          1200,
+          780
+        ]
+      }
+    ],
+    [
+      "Thua",
+      {
+        "title": "Đêm chưa qua",
+        "button": "Chơi lại",
+        "overlay": true,
+        "score": "0",
+        "flames": "0 ánh lửa",
+        "lanterns": "0 / 5",
+        "motes": "0 / 8",
+        "time": "2:50",
+        "pixels": [
+          1200,
+          780
+        ]
+      }
+    ],
+    [
+      "Chơi lại sau khi thua",
+      {
+        "title": "Đêm chưa qua",
+        "button": "Chơi lại",
+        "overlay": false,
+        "score": "0",
+        "flames": "3 ánh lửa",
+        "lanterns": "0 / 5",
+        "motes": "0 / 8",
+        "time": "3:00",
+        "pixels": [
+          1200,
+          780
+        ]
+      }
+    ]
+  ]
+}

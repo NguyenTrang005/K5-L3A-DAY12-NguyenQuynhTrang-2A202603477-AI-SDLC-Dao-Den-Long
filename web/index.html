@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d1024">
+    <meta name="description" content="Đêm 1 tại Đảo Bến. Cùng Mây gom đom đóm và thắp lại năm Đèn Lồng Lớn.">
+    <title>Đảo Đèn Lồng — Đêm 1</title>
+    <link rel="stylesheet" href="./web/style.css">
+  </head>
+  <body>
+    <main id="game">
+      <canvas id="scene" aria-label="Cảnh 3D Đảo Bến"></canvas>
+      <header class="hud">
+        <div class="location"><span class="seal" aria-hidden="true">✦</span><div><strong>Đảo Đèn Lồng</strong><small>Đêm 1 · Đảo Bến</small></div></div>
+        <div class="metrics" aria-label="Trạng thái hiện tại">
+          <div><small>Ánh lửa</small><span id="flames"></span></div>
+          <div><small>Đom đóm</small><span id="motes"></span></div>
+          <div><small>Đèn đã thắp</small><span id="lanterns"></span></div>
+          <div><small>Đến bình minh</small><span id="time"></span></div>
+          <div><small>Điểm</small><span id="score"></span></div>
+        </div>
+      </header>
+      <div id="overlay" class="overlay">
+        <section class="panel" aria-labelledby="panel-title">
+          <p class="eyebrow">ĐÊM 1 · ĐẢO BẾN</p>
+          <h1 id="panel-title">Đảo Đèn Lồng</h1>
+          <p id="panel-copy">Giúp Mây gom đom đóm và thắp lại năm Đèn Lồng Lớn trước khi trời sáng.</p>
+          <button id="play" type="button">Bắt đầu</button>
+        </section>
+      </div>
+      <div id="hint" class="hint" aria-live="polite"></div>
+      <footer class="controls" aria-label="Điều khiển">
+        <span><kbd>W A S D</kbd> Di chuyển</span>
+        <span><kbd>Space</kbd> Nhảy</span>
+        <span><kbd>E</kbd> Nạp đèn</span>
+        <span><kbd>F</kbd> Tỏa sáng <small id="pulse"></small></span>
+        <span><kbd>← →</kbd> Xoay góc nhìn</span>
+      </footer>
+    </main>
+    <script type="module" src="./web/client.mjs"></script>
+  </body>
+</html>

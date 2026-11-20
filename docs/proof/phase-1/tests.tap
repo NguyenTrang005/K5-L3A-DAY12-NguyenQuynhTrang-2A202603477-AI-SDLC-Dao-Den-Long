@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: headless thắng bằng nhặt bốn đom đóm rồi thắp đèn cuối, dừng đúng tick
+ok 1 - headless thắng bằng nhặt bốn đom đóm rồi thắp đèn cuối, dừng đúng tick
+  ---
+  duration_ms: 66.8814
+  type: 'test'
+  ...
+# Subtest: headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo
+ok 2 - headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo
+  ---
+  duration_ms: 65.6141
+  type: 'test'
+  ...
+# Subtest: headless sinh cùng ID và JSONL giống hệt nhau với cùng seed
+ok 3 - headless sinh cùng ID và JSONL giống hệt nhau với cùng seed
+  ---
+  duration_ms: 145.3755
+  type: 'test'
+  ...
+# Subtest: headless trả mã 2 và stderr cho nội dung scenario hoặc inputs sai
+ok 4 - headless trả mã 2 và stderr cho nội dung scenario hoặc inputs sai
+  ---
+  duration_ms: 251.5521
+  type: 'test'
+  ...
+# Subtest: nhặt đom đóm theo bán kính XZ, giới hạn mang và nạp một lần mỗi lượt nhấn
+ok 5 - nhặt đom đóm theo bán kính XZ, giới hạn mang và nạp một lần mỗi lượt nhấn
+  ---
+  duration_ms: 1.3034
+  type: 'test'
+  ...
+# Subtest: pulse trừ đom đóm, đẩy và làm choáng, có cooldown và cần nhấn lại
+ok 6 - pulse trừ đom đóm, đẩy và làm choáng, có cooldown và cần nhấn lại
+  ---
+  duration_ms: 1.0857
+  type: 'test'
+  ...
+# Subtest: Bóng Mực tránh vùng đèn, gây rơi đom đóm và không đánh trong thời gian bất tử
+ok 7 - Bóng Mực tránh vùng đèn, gây rơi đom đóm và không đánh trong thời gian bất tử
+  ---
+  duration_ms: 1.3964
+  type: 'test'
+  ...
+# Subtest: hết giờ thì thua ở tick tương ứng và dừng mô phỏng
+ok 8 - hết giờ thì thua ở tick tương ứng và dừng mô phỏng
+  ---
+  duration_ms: 0.2937
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 828.7887
