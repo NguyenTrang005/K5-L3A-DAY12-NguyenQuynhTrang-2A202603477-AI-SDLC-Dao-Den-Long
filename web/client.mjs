@@ -4,23 +4,25 @@ import { GameAudio } from './audio.mjs';
 
 const elements = Object.fromEntries([
   'scene', 'hud', 'overlay', 'panel-title', 'panel-kicker', 'panel-copy', 'panel-settings', 'actions',
-  'volume', 'sensitivity', 'volume-value', 'sensitivity-value',
-  'flames', 'location', 'motes', 'mote-count', 'lanterns', 'time', 'score', 'dash', 'pulse', 'hint', 'direction'
+  'volume', 'sensitivity', 'volume-value', 'sensitivity-value', 'accessibleColors', 'game',
+  'flames', 'location', 'motes', 'mote-count', 'lanterns', 'goal', 'time', 'warning-mark', 'score', 'dash', 'pulse', 'hint', 'direction'
 ].map(id => [id, document.getElementById(id)]));
 const keys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE', 'KeyF',
   'ShiftLeft', 'ShiftRight', 'ArrowLeft', 'ArrowRight']);
 const pauseKeys = new Set(['Escape', 'KeyP']);
 const STORAGE_KEY = 'dao-den-long.settings';
+const sliders = ['volume', 'sensitivity'];
 const timeText = seconds => Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 
 function settingsFromStorage() {
-  const defaults = { volume: 55, sensitivity: 100 };
+  const defaults = { volume: 55, sensitivity: 100, accessibleColors: false };
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) ?? {};
-    for (const key of Object.keys(defaults)) {
+    for (const key of sliders) {
       const { min, max } = elements[key];
       if (Number.isFinite(saved[key])) defaults[key] = Math.min(+max, Math.max(+min, saved[key]));
     }
+    defaults.accessibleColors = saved.accessibleColors === true;
   } catch {}
   return defaults;
 }
@@ -45,7 +47,7 @@ function run(tuning, renderer) {
   const active = new Set();
   const audio = new GameAudio();
   const settings = settingsFromStorage();
-  const motes = Array.from({ length: tuning.carry_capacity }, () => document.createElement('span'));
+  const motes = Array.from({ length: tuning.capacity_max }, () => document.createElement('span'));
   elements.motes.replaceChildren(...motes);
   const makeGame = night => new Game(tuning, { night, seed: 2025 + night });
   let game = makeGame(1);
@@ -103,13 +105,14 @@ function run(tuning, renderer) {
     campaignScore = 0;
     setGame(1);
     show('menu', 'BA ĐÊM GIỮ LỬA', 'Đảo Đèn Lồng',
-      'Theo chân Mây qua ba hòn đảo, gom đom đóm và thắp lại những ngọn đèn trước bình minh.',
+      'Theo chân Mây qua ba hòn đảo. Châm dầu và giữ đủ đèn sáng cho đến bình minh.',
       [['Bắt đầu', () => { audio.enable(settings.volume); intro(1); }], ['Cài đặt', () => openSettings('menu')]]);
   }
 
   function intro(night) {
     setGame(night);
-    show('intro', 'ĐÊM ' + night, game.map.name, 'Ông Đăng — “' + game.map.message + '”', [['Vào đảo', enter]]);
+    show('intro', 'ĐÊM ' + night, game.map.name,
+      'Ông Đăng — “' + game.map.message + ' Giữ ít nhất ' + game.requiredLights + ' đèn sáng tới bình minh nhé.”', [['Vào đảo', enter]]);
   }
 
   function enter() {
@@ -141,20 +144,30 @@ function run(tuning, renderer) {
   }
 
   function syncSettings() {
-    for (const key of Object.keys(settings)) {
+    for (const key of sliders) {
       elements[key].value = settings[key];
       setText(key + '-value', settings[key] + '%');
     }
+    elements.accessibleColors.checked = settings.accessibleColors;
+    elements.game.classList.toggle('accessible', settings.accessibleColors);
   }
 
-  for (const key of Object.keys(settings)) {
+  function saveSettings() {
+    syncSettings();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch {}
+  }
+
+  for (const key of sliders) {
     elements[key].addEventListener('input', () => {
       settings[key] = Number(elements[key].value);
       audio.volume(settings.volume);
-      syncSettings();
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch {}
+      saveSettings();
     });
   }
+  elements.accessibleColors.addEventListener('change', () => {
+    settings.accessibleColors = elements.accessibleColors.checked;
+    saveSettings();
+  });
 
   function result(reason) {
     const { night, score, state } = game;
@@ -166,13 +179,13 @@ function run(tuning, renderer) {
         show('dawn', 'BA HÒN ĐẢO ĐÃ SÁNG', 'Bình Minh', 'Tổng điểm ba Đêm: ' + campaignScore + '.',
           [['Về menu', menu]]);
       } else {
-        show('result', 'ĐÊM ' + night + ' HOÀN TẤT', 'Đảo đã sáng!',
+        show('result', 'ĐÊM ' + night + ' HOÀN TẤT', 'Đảo sáng tới bình minh!',
           'Điểm Đêm ' + night + ': ' + score + '. Tổng điểm: ' + campaignScore + '.',
           [['Đêm kế tiếp', () => intro(night + 1)], ['Về menu', menu]]);
       }
     } else {
       audio.play('lost');
-      const reasonText = reason === 'dawn' ? 'Trời đã sáng trước khi Mây thắp hết đèn.' : 'Mây đã hết Ngọn Lửa.';
+      const reasonText = reason === 'dawn' ? 'Khi trời sáng, còn ít hơn ' + game.requiredLights + ' đèn đang cháy.' : 'Mây đã hết Ngọn Lửa.';
       show('result', 'ĐÊM ' + night + ' · ' + game.map.name, 'Đêm chưa qua', reasonText,
         [['Chơi lại Đêm', restart], ['Về menu', menu]]);
     }
@@ -216,17 +229,26 @@ function run(tuning, renderer) {
     elements.flames.setAttribute('aria-label', game.player.flames + ' Ngọn Lửa');
     setText('location', 'Đêm ' + game.night + ' · ' + game.map.name);
     setText('lanterns', light + ' / ' + game.lanterns.length);
+    setText('goal', 'Cần ' + game.requiredLights + ' lúc bình minh');
     setText('time', timeText(seconds));
-    elements.time.parentElement.classList.toggle('danger', seconds <= 30);
+    elements.time.closest('.timer').classList.toggle('danger', seconds <= 30);
+    elements['warning-mark'].hidden = seconds > 30 || !settings.accessibleColors;
     setText('score', game.score);
-    setText('mote-count', game.player.carried + ' / ' + tuning.carry_capacity);
-    motes.forEach((slot, index) => slot.classList.toggle('lit', index < game.player.carried));
+    setText('mote-count', game.player.carried + ' / ' + game.capacity);
+    const grid = String(game.capacity);
+    if (elements.motes.style.getPropertyValue('--capacity') !== grid) elements.motes.style.setProperty('--capacity', grid);
+    motes.forEach((slot, index) => {
+      slot.hidden = index >= game.capacity;
+      slot.classList.toggle('lit', index < game.player.carried);
+    });
     const cooldown = end => Math.max(0, end - game.simTick) / TICK_RATE;
     const dash = cooldown(game.dashUntil), pulse = cooldown(game.pulseUntil);
     setText('dash', game.simTick < game.charmUntil ? 'Bùa Gió' : dash ? dash.toFixed(1) + ' s' : 'Sẵn sàng');
     setText('pulse', pulse ? pulse.toFixed(1) + ' s' : tuning.pulse_cost + ' đom đóm');
     const lantern = game.targetLantern();
-    const hint = lantern ? 'E — Nạp ánh sáng (' + lantern.deposited + '/10)' : game.windWarning ? 'Gió mạnh sắp nổi' : '';
+    let hint = game.windWarning ? 'Gió mạnh sắp nổi' : '';
+    if (lantern?.lit) hint = 'E — Châm dầu (' + Math.ceil(lantern.fuelUnits / TICK_RATE) + '/' + tuning.fuel_max + ')';
+    else if (lantern) hint = 'E — Nạp ánh sáng (' + lantern.deposited + '/' + game.lanternCost(lantern) + ')';
     setText('hint', mode === 'playing' ? (hint || (game.simTick < noticeUntil ? notice : '')) : '');
   }
 
@@ -296,12 +318,13 @@ function run(tuning, renderer) {
     }
     if (mode === 'playing' || mode === 'menu' || mode === 'intro') renderClock += elapsed;
     if (mode === 'playing') audio.ambience();
-    renderer.render(game, yaw, renderClock, pulseTick);
+    renderer.render(game, yaw, renderClock, pulseTick, settings.accessibleColors);
     if (ticking()) updateHud();
     updateDirection();
     requestAnimationFrame(animate);
   }
 
+  syncSettings();
   menu();
   requestAnimationFrame(animate);
 }

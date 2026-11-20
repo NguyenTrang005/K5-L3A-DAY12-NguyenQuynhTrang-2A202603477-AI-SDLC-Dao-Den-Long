@@ -14,6 +14,7 @@ uniform float u_ambient;
 uniform float u_glow;
 uniform float u_terrain;
 uniform float u_rim;
+uniform vec3 u_rimColor;
 varying mediump vec3 v_color;
 void main() {
   vec4 world = u_model * vec4(a_position, 1.0);
@@ -22,7 +23,7 @@ void main() {
   float lanternLight = 0.0;
   for (int i = 0; i < 7; i++) {
     vec3 lantern = u_lanterns[i];
-    if (lantern.z > 0.0) lanternLight += 1.0 - smoothstep(0.0, 10.0, length(world.xz - lantern.xy));
+    if (lantern.z > 0.0) lanternLight += lantern.z * (1.0 - smoothstep(0.0, 10.0, length(world.xz - lantern.xy)));
   }
   vec3 base = u_color * (0.42 + 0.35 * sunlight + u_ambient);
   if (u_terrain > 0.0) {
@@ -32,7 +33,7 @@ void main() {
   base += lanternLight * vec3(0.32, 0.18, 0.045) * (0.55 + 0.45 * sunlight);
   if (u_rim > 0.0) {
     float rim = pow(1.0 - max(dot(normal, normalize(u_eye - world.xyz)), 0.0), 3.0);
-    base = mix(base, vec3(0.478, 0.235, 1.0), rim * u_rim);
+    base = mix(base, u_rimColor, rim * u_rim);
   }
   base = mix(base, u_color, u_glow);
   float fog = smoothstep(25.0, 112.0, distance(u_eye, world.xyz));
@@ -134,6 +135,11 @@ function ramp() {
   for (const point of [a, d, [-3, 0, -1.5]]) vertices.push(...point, 0, 0, -1);
   for (const point of [b, c, [-3, 0, 1.5]]) vertices.push(...point, 0, 0, 1);
   return vertices;
+}
+
+function tornPaper() {
+  return [[-.22, .16], [.09, .09], [-.06, -.04], [-.06, -.04], [.09, .09], [.22, -.23],
+    [-.06, -.04], [.22, -.23], [.02, -.36]].flatMap(([x, y]) => [x, y, 0, 0, 0, 1]);
 }
 
 const normalize = vector => {
@@ -272,7 +278,7 @@ export class Renderer {
     this.gl = gl;
     this.program = createProgram(gl);
     gl.useProgram(this.program);
-    this.uniforms = Object.fromEntries(['viewProjection', 'model', 'inverseScale', 'eye', 'color', 'glow', 'terrain', 'ambient', 'rim']
+    this.uniforms = Object.fromEntries(['viewProjection', 'model', 'inverseScale', 'eye', 'color', 'glow', 'terrain', 'ambient', 'rim', 'rimColor']
       .map(name => [name, gl.getUniformLocation(this.program, 'u_' + name)]));
     this.uniforms.lanterns = gl.getUniformLocation(this.program, 'u_lanterns[0]');
     this.position = gl.getAttribLocation(this.program, 'a_position');
@@ -286,7 +292,7 @@ export class Renderer {
       hex: cylinder(.5, .5, 6), post: cylinder(.5, .55, 4), hat: cylinder(.03, .5, 20),
       robe: cylinder(.25, .5, 12), tree: cylinder(.05, .5, 7),
       gem: sphere(5, 3), sphere: sphere(), ring: ring(),
-      box: cylinder(Math.SQRT1_2, Math.SQRT1_2, 4, Math.PI / 4), terrace: terrace(), ramp: ramp()
+      box: cylinder(Math.SQRT1_2, Math.SQRT1_2, 4, Math.PI / 4), terrace: terrace(), ramp: ramp(), tear: tornPaper()
     };
     for (const [name, vertices] of Object.entries(meshes)) {
       const buffer = gl.createBuffer();
@@ -323,19 +329,33 @@ export class Renderer {
     gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
   }
 
-  lantern(lantern, tuning, time) {
+  lantern(lantern, tuning, eye, light) {
     const [x, y, z] = lantern.pos;
     const lit = lantern.lit;
+    const weak = lit && lantern.fuelUnits < tuning.low_fuel_threshold * 60;
+    const shellHeight = lit ? .95 : .95 * .8;
+    const sink = .95 - shellHeight;
+    const towardEye = Math.atan2(eye[0] - x, eye[2] - z);
     const color = lit ? '#FFB347' : '#5B5F6E';
     const base = '#414555';
     this.draw('hex', [x, y + .18, z], [2.5, .36, 2.5], base);
     this.draw('hex', [x, y + .46, z], [1.8, .25, 1.8], '#82717d');
     this.draw('post', [x, y + 1.45, z], [.47, 1.9, .47], '#6B4A2F', Math.PI / 4);
     this.draw('hex', [x, y + 2.48, z], [1.5, .23, 1.5], '#593f54');
-    this.draw('hex', [x, y + 3.03, z], [1.24, .95, 1.24], color, time * .1, lit ? 1 : .28);
-    this.draw('hat', [x, y + 3.72, z], [1.95, .67, 1.95], lit ? '#FFB347' : '#5B5F6E');
-    this.draw('gem', [x, y + 4.09, z], [.3, .33, .3], lit ? '#FFE9B0' : color, 0, lit ? 1 : .2);
-    if (lit) this.draw('ring', [x, y + .06, z], [2 * tuning.safe_radius, 1, 2 * tuning.safe_radius], '#F2C14E', 0, .35);
+    this.draw('hex', [x, y + 3.03 - sink / 2, z], [1.24, shellHeight, 1.24], color, 0, lit ? light : .28);
+    this.draw('hat', [x, y + 3.72 - sink, z], [1.95, .67, 1.95], lit ? '#FFB347' : '#5B5F6E');
+    this.draw('gem', [x, y + 4.09 - sink, z], [.3, .33, .3], lit ? '#FFE9B0' : color, 0, lit ? light : .2);
+    if (!lit) {
+      this.draw('tear', [x + .64 * Math.sin(towardEye), y + 2.98, z + .64 * Math.cos(towardEye)],
+        [1, 1, 1], '#24283A', towardEye, .6);
+      return;
+    }
+    if (!weak) this.draw('ring', [x, y + .06, z], [2 * tuning.safe_radius, 1, 2 * tuning.safe_radius], '#F2C14E', 0, .35);
+    const fuelWidth = 1.65 * lantern.fuelUnits / (60 * tuning.fuel_max);
+    const offset = (fuelWidth - 1.65) / 2;
+    this.draw('box', [x, y + 4.48, z], [1.8, .21, .12], '#24283A', towardEye, .75);
+    this.draw('box', [x + Math.cos(towardEye) * offset, y + 4.48, z - Math.sin(towardEye) * offset],
+      [Math.max(.008, fuelWidth), .135, .145], weak && light < .8 ? '#7F613B' : '#FFE9B0', towardEye, light);
   }
 
   player(game, time) {
@@ -362,7 +382,7 @@ export class Renderer {
     part('hex', .58, 1.3, .06, [.26, .31, .26], '#ffcb7b', 1);
   }
 
-  render(game, yaw, time, pulseTick) {
+  render(game, yaw, time, pulseTick, accessibleColors) {
     const { canvas, gl, uniforms } = this;
     const scale = Math.min(devicePixelRatio, 1.5, 1280 / Math.max(canvas.clientWidth, 1));
     const width = Math.max(1, Math.floor(canvas.clientWidth * scale));
@@ -379,8 +399,13 @@ export class Renderer {
     this.view = viewProjection(eye, target, width / height);
     gl.uniformMatrix4fv(uniforms.viewProjection, false, this.view);
     gl.uniform3fv(uniforms.eye, eye);
+    const shadeAccent = accessibleColors ? '#00B3FF' : '#7A3CFF';
+    gl.uniform3f(uniforms.rimColor, accessibleColors ? 0 : .478, accessibleColors ? .702 : .235, 1);
     const lights = new Float32Array(21);
-    game.lanterns.forEach((lantern, index) => lights.set([lantern.pos[0], lantern.pos[2], Number(lantern.lit)], index * 3));
+    const flicker = .74 + Math.cos(time * TAU) * .26;
+    game.lanterns.forEach((lantern, index) => lights.set([
+      lantern.pos[0], lantern.pos[2], lantern.lit ? (game.weakLantern(lantern) ? flicker : 1) : 0
+    ], index * 3));
     gl.uniform3fv(uniforms.lanterns, lights);
     gl.uniform1f(uniforms.ambient, .15 + .55 * game.lanterns.filter(lantern => lantern.lit).length / game.lanterns.length);
 
@@ -389,7 +414,7 @@ export class Renderer {
       this.island = buildIslandScenery(game.map);
     }
     for (const prop of this.island) this.draw(prop.kind, prop.pos, prop.size, prop.color, prop.yaw, prop.glow, prop.terrain);
-    for (const lantern of game.lanterns) this.lantern(lantern, game.tuning, time);
+    game.lanterns.forEach((lantern, index) => this.lantern(lantern, game.tuning, eye, lights[index * 3 + 2]));
     for (const [index, mote] of game.motes.entries()) {
       const [mx, my, mz] = mote.pos;
       const bob = Math.sin(time * 2.9 + index) * .21;
@@ -431,7 +456,7 @@ export class Renderer {
       for (const offset of [-.22, .22]) {
         this.draw('gem', [sx + Math.sin(heading) * .5 + Math.cos(heading) * offset, sy + .22 + bob,
           sz + Math.cos(heading) * .5 - Math.sin(heading) * offset],
-        [.19, .21, .19], stunned ? '#FFE9B0' : '#7A3CFF', 0, 1);
+        [.19, .21, .19], stunned ? '#FFE9B0' : shadeAccent, 0, 1);
       }
     }
     const pulseAge = game.simTick - pulseTick;

@@ -1,0 +1,82 @@
+{
+  "browser": "Chrome/157.0.8103.79",
+  "gpu": "SwiftShader",
+  "platform": "Windows 10.0.19045",
+  "cpu": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+  "sample": {
+    "resolution": [
+      1280,
+      720
+    ],
+    "seconds": 4.5,
+    "frames": 186,
+    "fps": 41.11
+  },
+  "settingsPersists": true,
+  "appearance": {
+    "count": "8 / 10",
+    "visibleSlots": 10,
+    "goal": "Cần 3 lúc bình minh",
+    "title": "Đảo Bến",
+    "state": "playing",
+    "accessible": true,
+    "warning": true,
+    "warningColor": "rgb(255, 255, 255)",
+    "hint": "E — Châm dầu (21/100)"
+  },
+  "blue": {
+    "accents": [
+      "#00B3FF",
+      "#00B3FF"
+    ],
+    "tearCount": 2,
+    "weakStrength": 0.555895984172821,
+    "litShell": 0.95,
+    "outShell": 0.76
+  },
+  "weakStrengths": [
+    0.9235911965370178,
+    0.9241039156913757,
+    0.5564086437225342,
+    0.5558962225914001
+  ],
+  "refuel": {
+    "id": "L1",
+    "pos": [
+      0,
+      0,
+      1.9
+    ],
+    "lit": true,
+    "deposited": 10,
+    "fuel": 100,
+    "ever_lit": true,
+    "relit_count": 0
+  },
+  "relit": {
+    "id": "L2",
+    "pos": [
+      4,
+      0,
+      9
+    ],
+    "lit": true,
+    "deposited": 5,
+    "fuel": 100,
+    "ever_lit": true,
+    "relit_count": 1
+  },
+  "capacityAfterRelight": 12,
+  "result": {
+    "count": "0 / 12",
+    "visibleSlots": 12,
+    "goal": "Cần 3 lúc bình minh",
+    "title": "Đảo sáng tới bình minh!",
+    "state": "result",
+    "accessible": false,
+    "warning": false,
+    "warningColor": "rgb(255, 90, 95)",
+    "hint": ""
+  },
+  "errors": []
+}

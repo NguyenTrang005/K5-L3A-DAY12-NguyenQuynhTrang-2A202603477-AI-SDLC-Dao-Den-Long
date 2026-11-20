@@ -14,8 +14,8 @@
       <div id="hud" hidden>
         <header class="hud">
           <div class="meter lives"><small>Ngọn Lửa</small><strong id="flames"></strong><span id="location"></span></div>
-          <div class="meter timer"><small>Đến bình minh</small><strong id="time"></strong></div>
-          <div class="meter objectives"><small>Đèn đã thắp</small><strong id="lanterns"></strong><span>Điểm <b id="score"></b></span></div>
+          <div class="meter timer"><small>Đến bình minh</small><strong><span id="warning-mark" aria-hidden="true" hidden>⚠ </span><span id="time"></span></strong></div>
+          <div class="meter objectives"><small>Đèn đang sáng</small><strong id="lanterns"></strong><span id="goal"></span><span>Điểm <b id="score"></b></span></div>
         </header>
         <div id="direction" class="direction" aria-label="Hướng tới đèn chưa sáng" hidden><span>▲</span></div>
         <div id="hint" class="hint" aria-live="polite"></div>
@@ -38,6 +38,7 @@
             <input id="volume" type="range" min="0" max="100" step="1">
             <label for="sensitivity">Độ nhạy chuột <output id="sensitivity-value" for="sensitivity"></output></label>
             <input id="sensitivity" type="range" min="25" max="175" step="5">
+            <label class="toggle" for="accessibleColors">Bảng màu dễ phân biệt <input id="accessibleColors" type="checkbox"></label>
           </div>
           <div id="actions" class="buttons"></div>
         </section>

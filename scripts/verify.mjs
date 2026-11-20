@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, rmdirSync, writeFileSync 
 import { join, resolve } from 'node:path';
 import { cpus, release, tmpdir } from 'node:os';
 
-const reportDir = resolve(process.argv[2] ?? 'dist/proof/phase-2');
+const reportDir = resolve(process.argv[2] ?? 'dist/proof/phase-3');
 
 function run(args) {
   const start = performance.now();
@@ -29,10 +29,10 @@ mkdirSync(reportDir, { recursive: true });
 const { stdout: results } = run(['--test', '--test-reporter=tap']);
 writeFileSync(join(reportDir, 'tests.tap'), results);
 
-const regression = replay(1, 100, 'night1-standard', [
-  '--scenario', 'tests/fixtures/night1-standard.scenario.json', '--inputs', 'tests/fixtures/night1-standard.inputs.json'
+const regression = replay(1, 100, 'dawn-standard', [
+  '--scenario', 'tests/fixtures/dawn-standard.scenario.json', '--inputs', 'tests/fixtures/night1-standard.inputs.json'
 ]);
-assert.deepEqual(regression.end, { type: 'end', ticks: 91, state: 'won', score: 406 });
+assert.deepEqual(regression.end, { type: 'end', ticks: 96, state: 'won', score: 1041 });
 console.log('Hồi quy Đêm 1:', regression.end);
 
 const bridge = replay(2, 225, 'cau-bridge', [
@@ -43,9 +43,15 @@ assert.deepEqual(
   ['night_start', 'charm_picked', 'paused', 'resumed', 'dash']
 );
 
-const metrics = [18000, 19800, 21600].map((ticks, index) => {
+const fuel = replay(1, 240, 'fuel-drain', [
+  '--scenario', 'tests/fixtures/fuel-drain.scenario.json', '--inputs', 'tests/fixtures/fuel-drain.inputs.json'
+]);
+assert.equal(fuel.end.state, 'won');
+assert.ok(['lantern_out', 'fuel_drain', 'refuel'].every(name => fuel.rows.some(row => row.name === name)));
+
+const metrics = [14400, 16200, 18000].map((ticks, index) => {
   const night = index + 1;
-  const directory = mkdtempSync(join(tmpdir(), 'phase2-perf-'));
+  const directory = mkdtempSync(join(tmpdir(), 'phase3-perf-'));
   const args = ['--scenario', 'tests/fixtures/full-night.scenario.json'];
   const title = 'full-night-' + night;
   try {

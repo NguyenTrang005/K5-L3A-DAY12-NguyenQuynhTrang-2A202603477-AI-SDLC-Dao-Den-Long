@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: hồi quy Đêm 1: gom 10 đom đóm, thắp đèn cuối và chỉ kết thúc ở bình minh
+ok 1 - hồi quy Đêm 1: gom 10 đom đóm, thắp đèn cuối và chỉ kết thúc ở bình minh
+  ---
+  duration_ms: 53.4311
+  type: 'test'
+  ...
+# Subtest: headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo
+ok 2 - headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo
+  ---
+  duration_ms: 54.1212
+  type: 'test'
+  ...
+# Subtest: headless sinh cùng ID và JSONL giống hệt nhau với cùng seed
+ok 3 - headless sinh cùng ID và JSONL giống hệt nhau với cùng seed
+  ---
+  duration_ms: 129.2126
+  type: 'test'
+  ...
+# Subtest: headless trả mã 2 và stderr cho nội dung scenario hoặc inputs sai
+ok 4 - headless trả mã 2 và stderr cho nội dung scenario hoặc inputs sai
+  ---
+  duration_ms: 199.5129
+  type: 'test'
+  ...
+# Subtest: nhặt theo XZ và giới hạn độ cao, nạp một lần mỗi lượt nhấn
+ok 5 - nhặt theo XZ và giới hạn độ cao, nạp một lần mỗi lượt nhấn
+  ---
+  duration_ms: 1.9634
+  type: 'test'
+  ...
+# Subtest: pulse trừ đom đóm, đẩy và làm choáng, có cooldown và cần nhấn lại
+ok 6 - pulse trừ đom đóm, đẩy và làm choáng, có cooldown và cần nhấn lại
+  ---
+  duration_ms: 2.024
+  type: 'test'
+  ...
+# Subtest: Bóng Mực tránh vùng đèn, gây rơi đom đóm và không đánh trong thời gian bất tử
+ok 7 - Bóng Mực tránh vùng đèn, gây rơi đom đóm và không đánh trong thời gian bất tử
+  ---
+  duration_ms: 1.6861
+  type: 'test'
+  ...
+# Subtest: hết giờ thì thua ở tick tương ứng và dừng mô phỏng
+ok 8 - hết giờ thì thua ở tick tương ứng và dừng mô phỏng
+  ---
+  duration_ms: 0.2545
+  type: 'test'
+  ...
+# Subtest: hồi quy v1.2: ba Đêm giữ layout, mảng snapshot và 20 đom đóm chuẩn
+ok 9 - hồi quy v1.2: ba Đêm giữ layout, mảng snapshot và 20 đom đóm chuẩn
+  ---
+  duration_ms: 193.541
+  type: 'test'
+  ...
+# Subtest: lướt đúng 12 tick từ hướng đang nhìn, giữ Y khi đang nhảy và cần hồi chiêu
+ok 10 - lướt đúng 12 tick từ hướng đang nhìn, giữ Y khi đang nhảy và cần hồi chiêu
+  ---
+  duration_ms: 52.6652
+  type: 'test'
+  ...
+# Subtest: pause giữ nguyên sim_tick, thời gian, cooldown, TTL, bùa và lịch sinh
+ok 11 - pause giữ nguyên sim_tick, thời gian, cooldown, TTL, bùa và lịch sinh
+  ---
+  duration_ms: 60.6716
+  type: 'test'
+  ...
+# Subtest: ngã bỏ qua bất tử, mất toàn bộ đồ một lần và hồi sinh sau 60 tick
+ok 12 - ngã bỏ qua bất tử, mất toàn bộ đồ một lần và hồi sinh sau 60 tick
+  ---
+  duration_ms: 57.2451
+  type: 'test'
+  ...
+# Subtest: thứ tự kết quả ưu tiên hết lửa; tại bình minh dùng ngưỡng đèn; đèn hòa chọn ID nhỏ
+ok 13 - thứ tự kết quả ưu tiên hết lửa; tại bình minh dùng ngưỡng đèn; đèn hòa chọn ID nhỏ
+  ---
+  duration_ms: 150.7018
+  type: 'test'
+  ...
+# Subtest: Đảo Cau: đi qua cầu và bị khóa hướng khi được bục phóng sang đảo đối diện
+ok 14 - Đảo Cau: đi qua cầu và bị khóa hướng khi được bục phóng sang đảo đối diện
+  ---
+  duration_ms: 111.3788
+  type: 'test'
+  ...
+# Subtest: Đảo Chuông: dốc lên tầng 1, vách chặn, bục lên tầng 2, tháp cản đường
+ok 15 - Đảo Chuông: dốc lên tầng 1, vách chặn, bục lên tầng 2, tháp cản đường
+  ---
+  duration_ms: 156.8632
+  type: 'test'
+  ...
+# Subtest: Gió Lạc sinh đúng lịch và biến mất khi hết thời gian chạy trốn
+ok 16 - Gió Lạc sinh đúng lịch và biến mất khi hết thời gian chạy trốn
+  ---
+  duration_ms: 115.1238
+  type: 'test'
+  ...
+# Subtest: Gió Lạc cướp trước hit, có thể lấy lại đom đóm bằng pulse, và sợ pulse khi chase
+ok 17 - Gió Lạc cướp trước hit, có thể lấy lại đom đóm bằng pulse, và sợ pulse khi chase
+  ---
+  duration_ms: 100.1124
+  type: 'test'
+  ...
+# Subtest: Bùa Gió tăng tốc, bỏ cooldown lướt, hết hiệu lực và hiện lại đúng tick
+ok 18 - Bùa Gió tăng tốc, bỏ cooldown lướt, hết hiệu lực và hiện lại đúng tick
+  ---
+  duration_ms: 97.5047
+  type: 'test'
+  ...
+# Subtest: gió mạnh theo sim_tick, cảnh báo giữ hướng và sức đẩy đúng 2 m/s
+ok 19 - gió mạnh theo sim_tick, cảnh báo giữ hướng và sức đẩy đúng 2 m/s
+  ---
+  duration_ms: 94.3636
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng dùng khoảng cách 3D và dừng đẩy ở vách tháp
+ok 20 - Tỏa Sáng dùng khoảng cách 3D và dừng đẩy ở vách tháp
+  ---
+  duration_ms: 53.1521
+  type: 'test'
+  ...
+# Subtest: đèn hao dầu đúng tick, tắt rồi thắp lại; đèn scenario không tăng sức chứa
+ok 21 - đèn hao dầu đúng tick, tắt rồi thắp lại; đèn scenario không tăng sức chứa
+  ---
+  duration_ms: 61.1646
+  type: 'test'
+  ...
+# Subtest: châm dầu làm tròn số đom đóm cần, kẹp ở 100, và chọn theo ID khi hòa
+ok 22 - châm dầu làm tròn số đom đóm cần, kẹp ở 100, và chọn theo ID khi hòa
+  ---
+  duration_ms: 75.1276
+  type: 'test'
+  ...
+# Subtest: sức chứa tăng khi thắp ánh sáng, chặn tối đa 20 và áp dụng lúc nhặt
+ok 23 - sức chứa tăng khi thắp ánh sáng, chặn tối đa 20 và áp dụng lúc nhặt
+  ---
+  duration_ms: 60.0747
+  type: 'test'
+  ...
+# Subtest: Bóng Mực đi tới đèn yếu khi wander; hòa chọn ID nhỏ và chase giữ mục tiêu Mây
+ok 24 - Bóng Mực đi tới đèn yếu khi wander; hòa chọn ID nhỏ và chase giữ mục tiêu Mây
+  ---
+  duration_ms: 111.5753
+  type: 'test'
+  ...
+# Subtest: hai Bóng hút cộng dồn và chỉ báo mỗi 60 tick hút; tạm dừng giữ nguyên dầu
+ok 25 - hai Bóng hút cộng dồn và chỉ báo mỗi 60 tick hút; tạm dừng giữ nguyên dầu
+  ---
+  duration_ms: 54.2789
+  type: 'test'
+  ...
+# Subtest: đúng 30 còn vùng sáng; châm dầu qua ngưỡng buộc Bóng ngừng hút và ra mép
+ok 26 - đúng 30 còn vùng sáng; châm dầu qua ngưỡng buộc Bóng ngừng hút và ra mép
+  ---
+  duration_ms: 101.3031
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng dừng hút, cộng 15 thay cho 5 và Bóng trở về wander khi hết choáng
+ok 27 - Tỏa Sáng dừng hút, cộng 15 thay cho 5 và Bóng trở về wander khi hết choáng
+  ---
+  duration_ms: 116.0829
+  type: 'test'
+  ...
+# Subtest: bình minh yêu cầu lần lượt 3, 4, 5 đèn; không kết thúc sớm và tính điểm theo dầu thô
+ok 28 - bình minh yêu cầu lần lượt 3, 4, 5 đèn; không kết thúc sớm và tính điểm theo dầu thô
+  ---
+  duration_ms: 443.3888
+  type: 'test'
+  ...
+# Subtest: đèn tắt đúng tick bình minh làm thua nếu thiếu ngưỡng; nạp lại cùng tick có thể cứu Đêm
+ok 29 - đèn tắt đúng tick bình minh làm thua nếu thiếu ngưỡng; nạp lại cùng tick có thể cứu Đêm
+  ---
+  duration_ms: 103.4164
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1449.1288

@@ -26,10 +26,10 @@ function replay(t, { seed = 7, ticks = 100, cadence = 10 } = {}) {
   return { dir, run, output: () => readFileSync(out, 'utf8') };
 }
 
-test('hồi quy Đêm 1 với số chuẩn: gom 10 đom đóm, thắp đèn cuối và dừng đúng tick', t => {
+test('hồi quy Đêm 1: gom 10 đom đóm, thắp đèn cuối và chỉ kết thúc ở bình minh', t => {
   const trial = replay(t, { seed: -7 });
   const result = trial.run([
-    '--scenario', 'tests/fixtures/night1-standard.scenario.json',
+    '--scenario', 'tests/fixtures/dawn-standard.scenario.json',
     '--inputs', 'tests/fixtures/night1-standard.inputs.json'
   ]);
   assert.equal(result.status, 0, result.stderr);
@@ -45,10 +45,10 @@ test('hồi quy Đêm 1 với số chuẩn: gom 10 đom đóm, thắp đèn cu�
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.deepEqual(rows.filter(row => row.type === 'event').slice(-3), [
     { type: 'event', tick: 91, name: 'deposit', data: { lantern_id: 'L1', amount: 10, deposited: 10 } },
-    { type: 'event', tick: 91, name: 'lantern_lit', data: { lantern_id: 'L1' } },
-    { type: 'event', tick: 91, name: 'game_over', data: { result: 'won', reason: 'all_lit' } }
+    { type: 'event', tick: 91, name: 'lantern_lit', data: { lantern_id: 'L1', relight: false } },
+    { type: 'event', tick: 96, name: 'game_over', data: { result: 'won', reason: 'dawn_survived' } }
   ]);
-  assert.deepEqual(rows.at(-1), { type: 'end', ticks: 91, state: 'won', score: 406 });
+  assert.deepEqual(rows.at(-1), { type: 'end', ticks: 96, state: 'won', score: 1041 });
 });
 
 test('headless giữ nguyên input vắng mặt, xoay hướng và chuẩn hóa chuyển động chéo', t => {

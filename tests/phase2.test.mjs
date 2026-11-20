@@ -1,36 +1,12 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { trace } from './trace.mjs';
 
-const root = fileURLToPath(new URL('../', import.meta.url));
-const quiet = { random_motes: false, random_shades: false, random_drifters: false, wind_enabled: false };
-
-function trace(t, { night = 1, ticks = 1, frames = [], scenario = {}, cadence = 1 }) {
-  const path = mkdtempSync(join(tmpdir(), 'night-'));
-  t.after(() => rmSync(path, { recursive: true, force: true }));
-  const scenarioFile = join(path, 'scenario.json');
-  const inputsFile = join(path, 'inputs.json');
-  const outputFile = join(path, 'trace.jsonl');
-  writeFileSync(scenarioFile, JSON.stringify({ ...quiet, ...scenario }));
-  writeFileSync(inputsFile, JSON.stringify({ frames }));
-  const result = spawnSync(process.execPath, ['src/headless.mjs', '--seed', '42', '--night', String(night),
-    '--ticks', String(ticks), '--scenario', scenarioFile, '--inputs', inputsFile, '--out', outputFile,
-    '--snapshot-every', String(cadence)], { cwd: root, encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  const rows = readFileSync(outputFile, 'utf8').trim().split('\n').map(JSON.parse);
-  const snapshots = new Map(rows.filter(row => row.type === 'snapshot').map(row => [row.tick, row]));
-  return { at: tick => snapshots.get(tick), events: rows.filter(row => row.type === 'event'), end: rows.at(-1) };
-}
-
-test('v1.1: ba Đêm mở với layout, thời lượng, mảng snapshot và 20 đom đóm chuẩn', t => {
+test('hồi quy v1.2: ba Đêm giữ layout, mảng snapshot và 20 đom đóm chuẩn', t => {
   const expected = [
-    [300, 5, [0, 0, 25], 23, 24],
-    [330, 6, [0, 0, 20], 23, 24],
-    [360, 7, [0, 6, 6], 23, 30]
+    [240, 5, [0, 0, 25], 23, 24],
+    [270, 6, [0, 0, 20], 23, 24],
+    [300, 7, [0, 6, 6], 23, 30]
   ];
   for (const [index, [duration, lamps, first, motes, maximum]] of expected.entries()) {
     const night = index + 1;
@@ -108,7 +84,7 @@ test('ngã bỏ qua bất tử, mất toàn bộ đồ một lần và hồi sin
   assert.equal(run.at(61).player.grounded, true);
 });
 
-test('thứ tự kết quả ưu tiên hết lửa, rồi đủ đèn, rồi hết giờ; đèn hòa chọn ID nhỏ', t => {
+test('thứ tự kết quả ưu tiên hết lửa; tại bình minh dùng ngưỡng đèn; đèn hòa chọn ID nhỏ', t => {
   const lanterns = [{ id: 'L1', pos: [-1, 0, 0], deposited: 8 }, { id: 'L2', pos: [1, 0, 0], deposited: 8 }];
   const tie = trace(t, { ticks: 1, frames: [{ tick: 0, interact: true }], scenario: { lanterns, player: { carried: 2 } } });
   assert.deepEqual(tie.events.find(event => event.name === 'deposit').data, { lantern_id: 'L1', amount: 2, deposited: 10 });
@@ -117,8 +93,8 @@ test('thứ tự kết quả ưu tiên hết lửa, rồi đủ đèn, rồi h�
   assert.deepEqual(lose.events.at(-1).data, { result: 'lost', reason: 'no_flames' });
   const win = trace(t, { ticks: 1, frames: [{ tick: 0, interact: true }],
     scenario: { lanterns: [lanterns[0], ...lit.slice(1)], player: { carried: 2 }, time_left_s: 1 / 60 } });
-  assert.deepEqual(win.events.at(-1).data, { result: 'won', reason: 'all_lit' });
-  assert.equal(win.end.score, 270);
+  assert.deepEqual(win.events.at(-1).data, { result: 'won', reason: 'dawn_survived' });
+  assert.equal(win.end.score, 1006);
 });
 
 test('Đảo Cau: đi qua cầu và bị khóa hướng khi được bục phóng sang đảo đối diện', t => {

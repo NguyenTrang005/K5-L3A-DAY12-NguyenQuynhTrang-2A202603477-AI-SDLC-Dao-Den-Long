@@ -11,7 +11,7 @@ const entry = (id, pos) => ({ id, pos });
 export const maps = {
   1: {
     name: 'Đảo Bến',
-    message: 'Mây à, gom đom đóm rồi mang ánh sáng về cho năm ngọn đèn. Hãy đứng gần đèn đã sáng khi Bóng Mực tới.',
+    message: 'Mây à, đèn sẽ cạn dầu theo thời gian. Châm dầu trước khi đèn chớp sáng để giữ Bóng Mực ở ngoài.',
     start: [0, 0, 0], islands: [circle(0, 0, 40)],
     lanterns: [[0, 0, 25], [23.8, 0, 7.7], [14.7, 0, -20.2], [-14.7, 0, -20.2], [-23.8, 0, 7.7]],
     motes: [...ring(0, 0, 12, 8), ...ring(0, 0, 33, 16)],
