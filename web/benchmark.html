@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đảo Đèn Lồng — Benchmark</title>
+    <link rel="stylesheet" href="./style.css">
+    <style>
+      html, body { width: 1280px; height: 720px; overflow: hidden; }
+      #game { width: 1280px; height: 720px; }
+      #status { position: absolute; left: 1rem; bottom: 1rem; }
+    </style>
+  </head>
+  <body>
+    <main id="game">
+      <canvas id="scene" aria-label="Cảnh benchmark"></canvas>
+      <span id="status">Đang tải benchmark…</span>
+    </main>
+    <script type="module" src="./benchmark.mjs"></script>
+  </body>
+</html>

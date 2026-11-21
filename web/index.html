@@ -18,13 +18,17 @@
           <div class="meter objectives"><small>Đèn đang sáng</small><strong id="lanterns"></strong><span id="goal"></span><span>Điểm <b id="score"></b></span></div>
         </header>
         <div id="direction" class="direction" aria-label="Hướng tới đèn chưa sáng" hidden><span>▲</span></div>
+        <div id="shade-direction" class="direction shade-direction" aria-label="Hướng Bóng Mực vừa xuất hiện" hidden><span>▲</span></div>
+        <div class="captions" aria-live="polite">
+          <span id="shade-cue"></span><span id="wind-cue"></span><span id="countdown-cue"></span><span id="fuel-cue"></span>
+        </div>
         <div id="hint" class="hint" aria-live="polite"></div>
         <footer class="action-bar">
-          <div class="controls folded"><span><kbd>W A S D</kbd> Đi</span><span><kbd>Space</kbd> Nhảy</span><span><kbd>← →</kbd> Camera</span><span><kbd>Esc</kbd> Dừng</span></div>
+          <div class="controls folded"><span><kbd id="move-key">W A S D</kbd> Đi</span><span><kbd id="jump-key">Space</kbd> Nhảy</span><span><kbd>← →</kbd> Camera</span><span><kbd id="pause-key">Esc</kbd> Dừng</span></div>
           <div class="meter inventory"><small>Đom đóm <b id="mote-count"></b></small><div id="motes"></div></div>
           <div class="meter cooldowns">
-            <div><span class="icon" aria-hidden="true">➤</span><small><kbd>Shift</kbd> Lướt</small><b id="dash"></b></div>
-            <div><span class="icon" aria-hidden="true">✧</span><small><kbd>F</kbd> Tỏa Sáng</small><b id="pulse"></b></div>
+            <div><span class="icon" aria-hidden="true">➤</span><small><kbd id="dash-key">Shift</kbd> Lướt</small><b id="dash"></b></div>
+            <div><span class="icon" aria-hidden="true">✧</span><small><kbd id="pulse-key">F</kbd> Tỏa Sáng</small><b id="pulse"></b></div>
           </div>
         </footer>
       </div>
@@ -39,7 +43,26 @@
             <label for="sensitivity">Độ nhạy chuột <output id="sensitivity-value" for="sensitivity"></output></label>
             <input id="sensitivity" type="range" min="25" max="175" step="5">
             <label class="toggle" for="accessibleColors">Bảng màu dễ phân biệt <input id="accessibleColors" type="checkbox"></label>
+            <label class="toggle" for="reducedMotion">Giảm chuyển động <input id="reducedMotion" type="checkbox"></label>
+            <label class="toggle" for="largeText">Chữ lớn <input id="largeText" type="checkbox"></label>
           </div>
+          <div id="binding-panel" hidden>
+            <div id="binding-grid" class="binding-grid"></div>
+            <p id="binding-status" class="status" aria-live="polite"></p>
+          </div>
+          <div id="ranking" hidden>
+            <p id="ranking-status" class="status" aria-live="polite"></p>
+            <table><thead><tr><th scope="col">#</th><th scope="col">Tên</th><th scope="col">Điểm</th><th scope="col">Đêm thắng</th></tr></thead><tbody id="ranking-rows"></tbody></table>
+          </div>
+          <form id="score-form" class="score-form" hidden>
+            <label for="score-name">Tên trên bảng xếp hạng</label>
+            <div class="score-entry">
+              <input id="score-name" name="name" required minlength="3" maxlength="12" pattern="[A-Za-z0-9_]{3,12}" autocomplete="off" aria-describedby="score-rules">
+              <button id="score-save" type="submit">Lưu điểm</button>
+            </div>
+            <p id="score-rules">3–12 ký tự A–Z, a–z, 0–9 hoặc dấu gạch dưới.</p>
+            <p id="score-status" class="status" aria-live="polite"></p>
+          </form>
           <div id="actions" class="buttons"></div>
         </section>
       </div>

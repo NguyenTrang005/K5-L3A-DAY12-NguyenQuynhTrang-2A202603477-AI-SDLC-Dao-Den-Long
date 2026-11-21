@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, rmdirSync, writeFileSync 
 import { join, resolve } from 'node:path';
 import { cpus, release, tmpdir } from 'node:os';
 
-const reportDir = resolve(process.argv[2] ?? 'dist/proof/phase-3');
+const reportDir = resolve(process.argv[2] ?? 'dist/proof/phase-4');
 
 function run(args) {
   const start = performance.now();
@@ -72,4 +72,12 @@ writeFileSync(join(reportDir, 'headless-metrics.json'), JSON.stringify({
   os: process.platform, os_release: release(), cpu: cpus()[0]?.model, node: process.version, metrics
 }, null, 2) + '\n');
 console.log('Thời gian headless:', metrics);
+const soakReport = join(reportDir, 'soak.json');
+run(['--expose-gc', '--max-semi-space-size=1', 'scripts/soak.mjs', '--seed', '7', '--nights', '10', '--out', soakReport]);
+const soak = JSON.parse(readFileSync(soakReport, 'utf8'));
+assert.equal(soak.results.length, 10);
+assert.equal(soak.crashes, 0);
+if (soak.mem_end_mb > 1.2 * soak.mem_start_mb) {
+  console.warn('RSS soak vượt ngưỡng 20% trên máy này. Xem số đo đã lưu.');
+}
 console.log('Bằng chứng được lưu tại', reportDir);

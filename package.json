@@ -1,6 +1,6 @@
 {
   "name": "dao-den-long",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": { "node": ">=20" },
@@ -8,6 +8,7 @@
     "build": "node scripts/build.mjs",
     "start": "node scripts/serve.mjs",
     "test": "node --test",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "package": "node scripts/package-release.mjs"
   }
 }

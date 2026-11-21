@@ -1,43 +1,45 @@
 import { ground } from '../src/maps.mjs';
 
 const TAU = Math.PI * 2;
+const INSTANCE_WIDTH = 13;
+const INSTANCE_FIELDS = [[4, 0], [3, 4], [3, 7], [3, 10]];
 const vertexSource = `
 attribute vec3 a_position;
 attribute vec3 a_normal;
+attribute vec4 a_pose;
+attribute vec3 a_scale;
+attribute vec3 a_color;
+attribute vec3 a_effects;
 uniform mat4 u_viewProjection;
-uniform mat4 u_model;
-uniform vec3 u_inverseScale;
-uniform vec3 u_color;
 uniform vec3 u_eye;
 uniform vec3 u_lanterns[7];
 uniform float u_ambient;
-uniform float u_glow;
-uniform float u_terrain;
-uniform float u_rim;
 uniform vec3 u_rimColor;
 varying mediump vec3 v_color;
 void main() {
-  vec4 world = u_model * vec4(a_position, 1.0);
-  vec3 normal = normalize(mat3(u_model) * (a_normal * u_inverseScale * u_inverseScale));
+  float c = cos(a_pose.w), s = sin(a_pose.w);
+  mat3 rotation = mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);
+  vec4 world = vec4(rotation * (a_position * a_scale) + a_pose.xyz, 1.0);
+  vec3 normal = normalize(rotation * (a_normal / a_scale));
   float sunlight = max(dot(normal, vec3(-0.481, 0.819, -0.307)), 0.0);
   float lanternLight = 0.0;
   for (int i = 0; i < 7; i++) {
     vec3 lantern = u_lanterns[i];
     if (lantern.z > 0.0) lanternLight += lantern.z * (1.0 - smoothstep(0.0, 10.0, length(world.xz - lantern.xy)));
   }
-  vec3 base = u_color * (0.42 + 0.35 * sunlight + u_ambient);
-  if (u_terrain > 0.0) {
+  vec3 base = a_color * (0.42 + 0.35 * sunlight + u_ambient);
+  if (a_effects.y > 0.0) {
     float grass = sin(world.x * 0.48 + sin(world.z * 0.35)) * cos(world.z * 0.21);
     base += grass * 0.028;
   }
   base += lanternLight * vec3(0.32, 0.18, 0.045) * (0.55 + 0.45 * sunlight);
-  if (u_rim > 0.0) {
+  if (a_effects.z > 0.0) {
     float rim = pow(1.0 - max(dot(normal, normalize(u_eye - world.xyz)), 0.0), 3.0);
-    base = mix(base, u_rimColor, rim * u_rim);
+    base = mix(base, u_rimColor, rim * a_effects.z);
   }
-  base = mix(base, u_color, u_glow);
+  base = mix(base, a_color, a_effects.x);
   float fog = smoothstep(25.0, 112.0, distance(u_eye, world.xyz));
-  v_color = mix(base, vec3(0.106, 0.137, 0.314), fog * (1.0 - u_glow * 0.5));
+  v_color = mix(base, vec3(0.106, 0.137, 0.314), fog * (1.0 - a_effects.x * 0.5));
   gl_Position = u_viewProjection * world;
 }
 `;
@@ -208,7 +210,7 @@ function createProgram(gl) {
   return program;
 }
 
-function buildIslandScenery(map) {
+function buildIslandScenery(map, benchmark) {
   const scenery = [];
   const add = (kind, pos, size, color, yaw = 0, glow = 0, terrain = 0) => {
     scenery.push({ kind, pos, size, color, yaw, glow, terrain });
@@ -254,7 +256,7 @@ function buildIslandScenery(map) {
     add('disc', [x, y + .075, z], [2, .15, 2], '#6B4A2F');
     add('ring', [x, y + .16, z], [1.65, 1, 1.65], '#F2C14E', 0, .75);
   }
-  for (let index = 0; index < 20; index++) {
+  for (let index = 0; !benchmark && index < 20; index++) {
     const angle = index * 2.4;
     const radius = 48 + index % 4 * 11;
     const x = Math.cos(angle) * radius;
@@ -278,13 +280,25 @@ export class Renderer {
     this.gl = gl;
     this.program = createProgram(gl);
     gl.useProgram(this.program);
-    this.uniforms = Object.fromEntries(['viewProjection', 'model', 'inverseScale', 'eye', 'color', 'glow', 'terrain', 'ambient', 'rim', 'rimColor']
+    this.uniforms = Object.fromEntries(['viewProjection', 'eye', 'ambient', 'rimColor']
       .map(name => [name, gl.getUniformLocation(this.program, 'u_' + name)]));
     this.uniforms.lanterns = gl.getUniformLocation(this.program, 'u_lanterns[0]');
     this.position = gl.getAttribLocation(this.program, 'a_position');
     this.normal = gl.getAttribLocation(this.program, 'a_normal');
     gl.enableVertexAttribArray(this.position);
     gl.enableVertexAttribArray(this.normal);
+    this.instancing = gl.getExtension('ANGLE_instanced_arrays');
+    this.instanceFields = ['pose', 'scale', 'color', 'effects'].map((name, index) => ({
+      location: gl.getAttribLocation(this.program, 'a_' + name),
+      size: INSTANCE_FIELDS[index][0], offset: INSTANCE_FIELDS[index][1]
+    }));
+    this.instanceBuffer = gl.createBuffer();
+    if (this.instancing) {
+      for (const { location } of this.instanceFields) {
+        gl.enableVertexAttribArray(location);
+        this.instancing.vertexAttribDivisorANGLE(location, 1);
+      }
+    }
     gl.enable(gl.DEPTH_TEST);
     this.meshes = {};
     const meshes = {
@@ -298,35 +312,52 @@ export class Renderer {
       const buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-      this.meshes[name] = { buffer, count: vertices.length / 6 };
+      this.meshes[name] = { buffer, count: vertices.length / 6, used: 0, data: new Float32Array(INSTANCE_WIDTH * 16) };
     }
     this.sceneMap = null;
     this.colors = new Map();
   }
 
   draw(kind, [x, y, z], [sx, sy, sz], color, yaw = 0, glow = 0, terrain = 0, rim = 0) {
-    const { gl, uniforms } = this;
     const mesh = this.meshes[kind];
-    const c = Math.cos(yaw);
-    const s = Math.sin(yaw);
     if (!this.colors.has(color)) {
       this.colors.set(color, [1, 3, 5].map(index => Number.parseInt(color.slice(index, index + 2), 16) / 255));
     }
-    gl.uniform3fv(uniforms.color, this.colors.get(color));
-    gl.uniform1f(uniforms.glow, glow);
-    gl.uniform1f(uniforms.terrain, terrain);
-    gl.uniform1f(uniforms.rim, rim);
-    gl.uniform3f(uniforms.inverseScale, 1 / sx, 1 / sy, 1 / sz);
-    gl.uniformMatrix4fv(uniforms.model, false, [
-      c * sx, 0, -s * sx, 0, 0, sy, 0, 0, s * sz, 0, c * sz, 0, x, y, z, 1
-    ]);
-    if (this.currentMesh !== mesh) {
+    if (mesh.used === mesh.data.length) {
+      const next = new Float32Array(mesh.data.length * 2);
+      next.set(mesh.data);
+      mesh.data = next;
+    }
+    mesh.data.set([x, y, z, yaw, sx, sy, sz, ...this.colors.get(color), glow, terrain, rim], mesh.used);
+    mesh.used += INSTANCE_WIDTH;
+  }
+
+  flush() {
+    const { gl, instancing } = this;
+    for (const mesh of Object.values(this.meshes)) {
+      if (!mesh.used) continue;
       gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
       gl.vertexAttribPointer(this.position, 3, gl.FLOAT, false, 24, 0);
       gl.vertexAttribPointer(this.normal, 3, gl.FLOAT, false, 24, 12);
-      this.currentMesh = mesh;
+      if (instancing) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, mesh.data.subarray(0, mesh.used), gl.STREAM_DRAW);
+        for (const { location, size, offset } of this.instanceFields) {
+          gl.vertexAttribPointer(location, size, gl.FLOAT, false, INSTANCE_WIDTH * 4, offset * 4);
+        }
+        instancing.drawArraysInstancedANGLE(gl.TRIANGLES, 0, mesh.count, mesh.used / INSTANCE_WIDTH);
+      } else {
+        for (let row = 0; row < mesh.used; row += INSTANCE_WIDTH) {
+          for (const { location, size, offset } of this.instanceFields) {
+            const field = mesh.data.subarray(row + offset, row + offset + size);
+            if (size === 4) gl.vertexAttrib4fv(location, field);
+            else gl.vertexAttrib3fv(location, field);
+          }
+          gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+        }
+      }
+      mesh.used = 0;
     }
-    gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
   }
 
   lantern(lantern, tuning, eye, light) {
@@ -382,7 +413,7 @@ export class Renderer {
     part('hex', .58, 1.3, .06, [.26, .31, .26], '#ffcb7b', 1);
   }
 
-  render(game, yaw, time, pulseTick, accessibleColors) {
+  render(game, yaw, time, pulseTick, { accessibleColors = false, reducedMotion = false, camera, benchmark = false } = {}) {
     const { canvas, gl, uniforms } = this;
     const scale = Math.min(devicePixelRatio, 1.5, 1280 / Math.max(canvas.clientWidth, 1));
     const width = Math.max(1, Math.floor(canvas.clientWidth * scale));
@@ -395,31 +426,33 @@ export class Renderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const [x, y, z] = game.player.pos;
-    const { eye, target, height: cameraHeight } = cameraRig(game.map, x, y, z, yaw);
+    const { eye, target, height: cameraHeight = 0 } = camera ?? cameraRig(game.map, x, y, z, yaw);
     this.view = viewProjection(eye, target, width / height);
     gl.uniformMatrix4fv(uniforms.viewProjection, false, this.view);
     gl.uniform3fv(uniforms.eye, eye);
     const shadeAccent = accessibleColors ? '#00B3FF' : '#7A3CFF';
     gl.uniform3f(uniforms.rimColor, accessibleColors ? 0 : .478, accessibleColors ? .702 : .235, 1);
     const lights = new Float32Array(21);
-    const flicker = .74 + Math.cos(time * TAU) * .26;
+    const flicker = reducedMotion ? .74 : .74 + Math.cos(time * TAU) * .26;
     game.lanterns.forEach((lantern, index) => lights.set([
       lantern.pos[0], lantern.pos[2], lantern.lit ? (game.weakLantern(lantern) ? flicker : 1) : 0
     ], index * 3));
     gl.uniform3fv(uniforms.lanterns, lights);
     gl.uniform1f(uniforms.ambient, .15 + .55 * game.lanterns.filter(lantern => lantern.lit).length / game.lanterns.length);
 
-    if (this.sceneMap !== game.map) {
+    if (this.sceneMap !== game.map || this.benchmark !== benchmark) {
       this.sceneMap = game.map;
-      this.island = buildIslandScenery(game.map);
+      this.benchmark = benchmark;
+      this.island = buildIslandScenery(game.map, benchmark);
     }
     for (const prop of this.island) this.draw(prop.kind, prop.pos, prop.size, prop.color, prop.yaw, prop.glow, prop.terrain);
     game.lanterns.forEach((lantern, index) => this.lantern(lantern, game.tuning, eye, lights[index * 3 + 2]));
     for (const [index, mote] of game.motes.entries()) {
       const [mx, my, mz] = mote.pos;
+      if (!this.visible([mx, my + .8, mz], 1.3) && Math.hypot(mx - eye[0], mz - eye[2]) > 3) continue;
       const bob = Math.sin(time * 2.9 + index) * .21;
       this.draw('gem', [mx, my + .84 + bob, mz], [.38, .48, .38], '#FFF6C2', time * 1.8 + index, 1);
-      this.draw('gem', [mx + .25, my + 1.13 - bob, mz + .24], [.13, .13, .13], '#FFE58A', 0, .95);
+      if (!benchmark) this.draw('gem', [mx + .25, my + 1.13 - bob, mz + .24], [.13, .13, .13], '#FFE58A', 0, .95);
     }
     for (const charm of game.charms) {
       if (charm.respawnAt > game.simTick) continue;
@@ -448,6 +481,7 @@ export class Renderer {
     }
     for (const [index, shade] of game.shades.entries()) {
       const [sx, sy, sz] = shade.pos;
+      if (!this.visible([sx, sy, sz], 1.4) && Math.hypot(sx - eye[0], sz - eye[2]) > 4) continue;
       const stunned = shade.state === 'stunned';
       const bob = Math.sin(time * 4.2 + index) * .13;
       const heading = Math.atan2(x - sx, z - sz);
@@ -460,20 +494,21 @@ export class Renderer {
       }
     }
     const pulseAge = game.simTick - pulseTick;
-    if (pulseAge < 28) {
+    if (pulseAge < 28 && !reducedMotion) {
       const diameter = 1 + pulseAge / 28 * game.tuning.pulse_radius * 2;
       this.draw('ring', [x, y + .09, z], [diameter, 1, diameter], '#FFE9B0', 0, 1);
     }
-    if (!game.respawnAt && (game.simTick >= game.hitUntil || game.simTick % 12 < 7)) this.player(game, time);
+    if (!game.respawnAt && (reducedMotion || game.simTick >= game.hitUntil || game.simTick % 12 < 7)) this.player(game, time);
+    this.flush();
   }
 
-  visible([x, y, z]) {
+  visible([x, y, z], margin = 1) {
     if (!this.view) return true;
     const m = this.view;
     const w = m[3] * x + m[7] * y + m[11] * z + m[15];
     if (w <= 0) return false;
     const px = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
     const py = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
-    return Math.abs(px) < 1 && Math.abs(py) < 1;
+    return Math.abs(px) < margin && Math.abs(py) < margin;
   }
 }

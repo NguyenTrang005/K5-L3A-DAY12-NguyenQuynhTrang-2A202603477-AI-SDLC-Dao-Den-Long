@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 4 — v1.0.0 · Test Contract v1.3
+
+- Thêm hai lệnh đo benchmark WebGL 200 Bóng Mực và soak headless 10 Đêm. Gom các lượt vẽ cùng hình học để giảm chi phí dựng khung hình.
+- Thêm bảng xếp hạng top 10, lưu cục bộ, xem từ menu và xuất JSON qua CLI.
+- Thêm đổi phím, phụ đề và mũi tên Bóng Mực, giảm chuyển động và chữ lớn. Giữ bảng màu dễ phân biệt của Phase 3.
+- Thêm gói web tĩnh chạy được, giấy phép, ghi công, retro và hướng dẫn phát hành.
+
 ## Phase 3 — Test Contract v1.2
 
 ### Thay đổi phá vỡ tương thích
@@ -15,3 +22,14 @@
 
 - Hiện lượng dầu, ngưỡng đèn khi bình minh và sức chứa hiện tại. Đèn yếu nhấp nháy, đèn tắt có giấy rách và xẹp.
 - Cài đặt có tùy chọn lưu bảng màu dễ phân biệt.
+
+## Phase 2 — Test Contract v1.1
+
+- Chuẩn hóa tốc độ, thời gian, chi phí thắp, điểm số và bản đồ.
+- Thêm Đảo Cau, Đảo Chuông, cầu, dốc, bục nhảy, gió, lướt, Gió Lạc, Bùa Gió và tạm dừng.
+- Thêm chuyển Đêm, kết quả, âm thanh, cài đặt và snapshot có `sim_tick`.
+
+## Phase 1 — Test Contract v1.0
+
+- Bản chơi 3D đầu tiên tại Đảo Bến, với nhặt đom đóm, nạp đèn, Bóng Mực, Tỏa Sáng, thắng, thua và chơi lại.
+- Thêm chế độ headless tất định và xuất JSONL.

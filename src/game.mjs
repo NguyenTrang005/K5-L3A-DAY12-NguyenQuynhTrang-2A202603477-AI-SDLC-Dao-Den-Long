@@ -25,7 +25,7 @@ const ascendingId = (a, b) => {
   return a.id < b.id ? -1 : Number(a.id > b.id);
 };
 
-function createRandom(seed) {
+export function createRandom(seed) {
   let value = seed >>> 0;
   return () => {
     value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
@@ -99,6 +99,7 @@ export class Game {
     this.motes = [];
     this.shades = [];
     this.drifters = [];
+    this.shelters = [];
     this.ids = { M: 0, S: 0, D: 0 };
     this.reservedIds = new Set([...(scenario.motes ?? []), ...(scenario.shades ?? []), ...(scenario.drifters ?? [])]
       .map(actor => actor.id).filter(Boolean));
@@ -295,13 +296,13 @@ export class Game {
   collect() {
     const { player, tuning } = this;
     const capacity = this.capacity;
-    this.motes = this.motes.filter(mote => {
-      if (mote.availableAt > this.simTick || player.carried >= capacity
-        || !touches(player.pos, mote.pos, tuning.pickup_radius)) return true;
+    for (let index = 0; index < this.motes.length && player.carried < capacity; index++) {
+      const mote = this.motes[index];
+      if (mote.availableAt > this.simTick || !touches(player.pos, mote.pos, tuning.pickup_radius)) continue;
       player.carried++;
       this.emit('mote_picked', { carried: player.carried });
-      return false;
-    });
+      this.motes.splice(index--, 1);
+    }
     for (const charm of this.charms) {
       if (charm.respawnAt > this.simTick || !touches(player.pos, charm.pos, tuning.pickup_radius)) continue;
       this.charmUntil = this.simTick + 600;
@@ -388,14 +389,16 @@ export class Game {
     for (const lantern of this.lanterns) {
       if (lantern.lit) lantern.fuelUnits -= this.tuning.fuel_decay_per_s;
     }
-    const reports = [];
+    let reports;
     for (const shade of this.shades) {
       if (shade.state !== 'drain' || !this.canDrain(shade)) continue;
       shade.target.fuelUnits -= this.tuning.drain_per_s;
-      if (++shade.drainTicks % TICK_RATE === 0) reports.push(shade);
+      if (++shade.drainTicks % TICK_RATE === 0) (reports ??= []).push(shade);
     }
-    for (const { id, target } of reports) {
-      this.emit('fuel_drain', { lantern_id: target.id, shade_id: id, fuel: displayFuel(target.fuelUnits) });
+    if (reports) {
+      for (const { id, target } of reports) {
+        this.emit('fuel_drain', { lantern_id: target.id, shade_id: id, fuel: displayFuel(target.fuelUnits) });
+      }
     }
     for (const lantern of this.lanterns) {
       if (!lantern.lit || lantern.fuelUnits > 0) continue;
@@ -413,7 +416,10 @@ export class Game {
   }
 
   zones() {
-    this.shelters = this.lanterns.filter(lantern => lantern.lit && !this.weakLantern(lantern));
+    this.shelters.length = 0;
+    for (const lantern of this.lanterns) {
+      if (lantern.lit && !this.weakLantern(lantern)) this.shelters.push(lantern);
+    }
     for (const shade of this.shades) {
       if (shade.state === 'drain' && !this.canDrain(shade)) this.stopDraining(shade);
       if (shade.evict && !this.shelters.includes(shade.evict.shelter)) shade.evict = null;
@@ -545,9 +551,13 @@ export class Game {
   }
 
   updateDrifters(canTarget) {
-    for (const drifter of this.drifters) {
+    for (let index = 0; index < this.drifters.length; index++) {
+      const drifter = this.drifters[index];
       if (this.simTick >= drifter.until) drifter.state = 'removed';
-      if (drifter.state === 'removed') continue;
+      if (drifter.state === 'removed') {
+        this.drifters.splice(index--, 1);
+        continue;
+      }
       let speed = 7;
       if (drifter.state !== 'flee') {
         const chase = canTarget && this.player.carried >= 5 && within(drifter.pos, this.player.pos, 15);
@@ -565,22 +575,28 @@ export class Game {
       drifter.pos[0] += Math.cos(drifter.heading) * speed * DT;
       drifter.pos[2] += Math.sin(drifter.heading) * speed * DT;
     }
-    this.drifters = this.drifters.filter(drifter => drifter.state !== 'removed');
   }
 
   contact() {
-    for (const drifter of [...this.drifters].sort(ascendingId)) {
-      if (drifter.state === 'flee' || this.player.carried === 0 || !within(drifter.pos, this.player.pos, 1.2)) continue;
-      const amount = Math.min(3, this.player.carried);
-      this.player.carried -= amount;
-      drifter.stolen = amount;
-      this.flee(drifter, 240);
-      this.emit('drifter_steal', { drifter_id: drifter.id, amount, carried: this.player.carried });
+    if (this.player.carried && this.drifters.length) {
+      const touching = this.drifters.filter(drifter => drifter.state !== 'flee' && within(drifter.pos, this.player.pos, 1.2));
+      for (const drifter of touching.sort(ascendingId)) {
+        if (!this.player.carried) break;
+        const amount = Math.min(3, this.player.carried);
+        this.player.carried -= amount;
+        drifter.stolen = amount;
+        this.flee(drifter, 240);
+        this.emit('drifter_steal', { drifter_id: drifter.id, amount, carried: this.player.carried });
+      }
     }
     if (this.simTick < this.hitUntil || this.shelters.some(lantern => within(this.player.pos, lantern.pos, this.tuning.safe_radius))) return;
-    const shade = [...this.shades].sort(ascendingId).find(shade => ['chase', 'wander'].includes(shade.state) && !shade.evictedThisTick
-      && touches(shade.pos, this.player.pos, this.tuning.shade_hit_radius));
-    if (shade) this.hit(shade);
+    let nearestId;
+    for (const shade of this.shades) {
+      if ((shade.state !== 'chase' && shade.state !== 'wander') || shade.evictedThisTick
+        || !touches(shade.pos, this.player.pos, this.tuning.shade_hit_radius)) continue;
+      if (!nearestId || ascendingId(shade, nearestId) < 0) nearestId = shade;
+    }
+    if (nearestId) this.hit(nearestId);
   }
 
   hit(shade) {
@@ -641,7 +657,9 @@ export class Game {
     this.simTick++;
     this.timeLeft = Math.max(0, this.startTime - this.simTick / TICK_RATE);
     this.updateFuel();
-    this.motes = this.motes.filter(mote => mote.expiresAt > this.simTick);
+    for (let index = this.motes.length - 1; index >= 0; index--) {
+      if (this.motes[index].expiresAt <= this.simTick) this.motes.splice(index, 1);
+    }
     this.updateWind();
     if (this.respawnAt === this.simTick) this.respawn();
     else if (!this.respawnAt && this.player.flames > 0) this.movePlayer(input, pressed('jump'), pressed('dash'));
@@ -662,6 +680,13 @@ export class Game {
       this.end(survived ? 'won' : 'lost', survived ? 'dawn_survived' : 'dawn');
     }
     return this.events;
+  }
+
+  stepBenchmark() {
+    this.tick++;
+    this.simTick++;
+    this.zones();
+    this.updateShades(false);
   }
 
   snapshot() {

@@ -1,0 +1,60 @@
+{
+  "browser": "Chrome/157.0.8103.79",
+  "source": "Gói phát hành đã giải nén",
+  "samples": [
+    {
+      "night": 1,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fps": 60
+    },
+    {
+      "night": 2,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fps": 60
+    },
+    {
+      "night": 3,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fps": 60
+    }
+  ],
+  "dialog": {
+    "fontDefault": "18px",
+    "duplicate": "Phím W đang dùng cho Đi tới.",
+    "fontLarge": "22.5px",
+    "cues": [
+      "shade-cue",
+      "countdown-cue",
+      "fuel-cue",
+      "wind-cue"
+    ]
+  },
+  "entries": [
+    {
+      "name": "QA_Win",
+      "score": 2238,
+      "nights_won": 3,
+      "achieved_at": "2026-11-21T01:58:31.226Z",
+      "seed": 2026
+    },
+    {
+      "name": "QA_Lost",
+      "score": 0,
+      "nights_won": 0,
+      "achieved_at": "2026-11-21T01:58:23.380Z",
+      "seed": 2026
+    }
+  ],
+  "pauseSimTick": 1,
+  "settingsPersisted": true,
+  "restoredDefaults": true
+}
